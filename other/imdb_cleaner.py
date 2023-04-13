@@ -1,10 +1,26 @@
-# https://stackoverflow.com/a/43286094
+import csv
+import os
 
-csv_path = ''
-imdb_crop_path = ''
+csv_path = 'imdb_train_new_1024.csv'
+imdb_crop_dir = '../../datasets/training/imdbwiki/imdb_crop'
 
-import pandas as pd
-chunksize = 10 ** 8
-for chunk in pd.read_csv(filename, chunksize=chunksize):
-    process(chunk)
+with open(csv_path, 'r') as csv_file:
+    length = sum(1 for _ in csv_file) # Count lines
 
+with open(csv_path, 'r') as csv_file:
+    reader = csv.reader(csv_file)
+    for idx, row in enumerate(reader):
+        if idx == 0: continue # Skip header
+
+        fname = row[0]
+        age = row[1]
+        gender = row[2]
+
+        try:
+            old_path = os.path.join(imdb_crop_dir, fname)
+            new_path = os.path.join(imdb_crop_dir, f'{gender}_{age}_{idx}.jpg')
+            os.replace(old_path, new_path)
+
+            print(f"{idx}/{length}: '{old_path}' -> '{new_path}'")
+        except Exception as e:
+            print(e)
