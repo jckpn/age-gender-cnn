@@ -1,3 +1,8 @@
+name: fyp
+channels:
+  - anaconda
+  - conda-forge
+  - defaults
 dependencies:
   - asttokens=2.2.1=pyhd8ed1ab_0
   - autopep8=1.6.0=pyhd3eb1b0_1
