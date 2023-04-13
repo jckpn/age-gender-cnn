@@ -1,4 +1,4 @@
-load('wiki.mat');
+load('wiki_crop/wiki.mat');
 
 [ages,~]=datevec(datenum(wiki.photo_taken,7,1)-wiki.dob); % From IMDB-WIKI docs
 
@@ -13,8 +13,8 @@ for i = 1:length(wiki.dob)
     end
     age = num2str(ages(i));
     id = num2str(i); % Get the file id
-    new_path = [gender '_' age '_' id '.jpg']; % Create the new file name↪→
-    old_path = [char(wiki.full_path(i))]; % Get the old file name
+    new_path = ['wiki_crop/' gender '_' age '_' id '.jpg']; % Create the new file name↪→
+    old_path = ['wiki_crop/' char(wiki.full_path(i))]; % Get the old file name
     disp([id '/' num2str(length(wiki.dob)) ': ' old_path ' -> ' new_path]);
     try
         copyfile(old_path, new_path); % Rename the file
