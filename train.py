@@ -4,7 +4,7 @@ from torch.utils.data import DataLoader
 from time import time, strftime
 import torch
 import os
-import tests
+from tqdm import tqdm
 
 
 def save_net(model, path):
@@ -27,7 +27,7 @@ def print_training_status(epoch_count, images_seen, train_loss, val_loss, elapse
 
 
 # TRAIN FUNCTION
-def train_model(model, train_set, val_set, model_save_dir='../models',
+def train_model(model, train_set, val_set, model_save_dir='models/',
                  learning_rate=0.001, max_epochs=30, patience=3,
                 loss_fn=nn.CrossEntropyLoss(), is_autoencoder=False,
                 optim_fn=torch.optim.SGD, batch_size=64, filename_note=None):
@@ -47,14 +47,14 @@ def train_model(model, train_set, val_set, model_save_dir='../models',
     val_dataloader = DataLoader(val_set, batch_size, shuffle=True)
 
     print()
-    print(f"TRAINING MODEL {model_save_name} WITH PARAMS:")
-    print(f" - Architecture: {model.__class__.__name__}")
-    print(f" - Learning rate: {learning_rate}")
-    print(f" - Optimizer: {optimizer.__class__.__name__}")
-    print(f" - Loss function: {loss_fn}")
-    print(f" - Other notes: None" if not filename_note else f" - Other notes: {filename_note}")
+    print(f'TRAINING MODEL {model_save_name} WITH PARAMS:')
+    print(f' - Architecture: {model.__class__.__name__}')
+    print(f' - Learning rate: {learning_rate}')
+    print(f' - Optimizer: {optimizer.__class__.__name__}')
+    print(f' - Loss function: {loss_fn}')
+    print(f' - Other notes: None' if not filename_note else f' - Other notes: {filename_note}')
     print()
-    print("EPOCH | EXAMPLES SEEN | TRAIN LOSS | VAL LOSS | ELAPSED TIME")
+    print('EPOCH | EXAMPLES SEEN | TRAIN LOSS | VAL LOSS | ELAPSED TIME')
 
     start_time = time()  # Get start time to calculate training time later
 
@@ -64,7 +64,7 @@ def train_model(model, train_set, val_set, model_save_dir='../models',
             # Train model with training set
             model.train() # Set model to training mode
             train_loss = 0
-            for images, labels in train_dataloader:  # iterate through batches
+            for images, labels in tqdm(train_dataloader, leave=False) :  # iterate through batches
                 # Forward pass
                 outputs = model(images)
                 if is_autoencoder:
@@ -85,6 +85,7 @@ def train_model(model, train_set, val_set, model_save_dir='../models',
                 loss = loss_fn(outputs, labels)
                 val_loss += loss.item()
             val_loss /= len(val_dataloader) # Average loss over batch
+            val_loss_history.append(val_loss) # Append to history
             if best_val_loss is None or val_loss < best_val_loss:
                 save_net(model, model_save_path)
                 best_val_loss = val_loss
@@ -99,8 +100,6 @@ def train_model(model, train_set, val_set, model_save_dir='../models',
                 print(f"\nHalting training - {patience} epochs without improvement")
                 break
 
-            val_loss_history.append(val_loss)
-
     except KeyboardInterrupt:
         print(f"\nHalting training - keyboard interrupt")
         pass
@@ -113,7 +112,11 @@ def train_model(model, train_set, val_set, model_save_dir='../models',
         f'\nTraining took {training_time_s//60:.0f}m {training_time_s%60:02.0f}s',
         f'({training_time_s//epoch_count}s per epoch)')
 
-    print(f"\nBest model from session saved to '{model_save_path}'\n")
+    if os.path.exists(model_save_path):
+        print(f"\nBest model from session saved to '{model_save_path}'\n")
+    else:
+        print('Model NOT saved - check previous error messages')
+
     
     # Return trained model
     return model

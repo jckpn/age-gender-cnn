@@ -8,7 +8,7 @@ def class_accuracy(net, test_dataset, print_results=False):
     net.eval()
     acc = 0
     tests = 0
-    for images, labels in tqdm(test_dataloader):
+    for images, labels in tqdm(test_dataloader, leave=False):
         for idx, image in enumerate(images):
             image = image.unsqueeze(0)
             label = labels[idx].item()
