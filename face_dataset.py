@@ -54,12 +54,14 @@ class FaceDataset(Dataset):
                 image = cv.imread(path)
                 if processor:
                     face_images, coords = processor.run(image)
+
+                    # Run checks
                     if len(face_images) != 1:  # We want exactly 1 face per training image
                         if print_errors: print(f'Skipping {filename}:',
                                                f'{len(face_images)} faces found in image',
                                                '(1 required)')
                         continue
-                    elif coords['face_width'] < min_size:
+                    if min(coords[0]['face_w'], coords[0]['face_h']) < min_size:
                         if print_errors: print(f'Skipping {filename}:',
                                                f'face width {coords["face_width"]} < {min_size}')
                         continue
@@ -96,7 +98,7 @@ class FaceDataset(Dataset):
                f'({len(all_paths)-len(self.dataframe)} bad items ignored)\n')
         
         if save_dir is not None:
-            if len(os.listdir(save_dir)) == len(self.dataframe):
+            if len(os.listdir(save_dir)) >= len(self.dataframe):
                 print(f'Dataset saved to {save_dir}')
             else:
                 print('Error saving dataset')
