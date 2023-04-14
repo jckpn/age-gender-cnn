@@ -1,0 +1,12 @@
+name: fyp
+channels:
+  - defaults
+dependencies:
+  - python
+  - black
+  - opencv
+  - pyqt
+  - qt
+  - autopep8
+  - ipykernel
+prefix: C:\Users\jckpn\anaconda3\envs\fyp
