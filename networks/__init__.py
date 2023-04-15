@@ -7,3 +7,4 @@ from .lenet5 import LeNet5
 from .variableattention import VariableAttentionNet
 from .gridattention import GridAttentionNet
 from .autoencoder import AutoEncoder
+from .alexnet import AlexNet
