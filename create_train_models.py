@@ -16,17 +16,20 @@ device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 #     max_size=None,
 #     transform=transforms.ToTensor())
 
+transform = transforms.Compose([
+    transforms.ToTensor(),
+    transforms.Normalize((0.5, 0.5 ,0.5), (0.25, 0.25, 0.25)),
+])
+
 ds = torch.utils.data.ConcatDataset([
     SlowDataset(
         dir='../processed_datasets/imdb_eyealign_3',
         label_func=age_class_label(cutoffs=[15, 40]),
-        print_errors=True,
-        transform=transforms.ToTensor()),
+        transform=transform),
     SlowDataset(
         dir='../processed_datasets/wiki_eyealign_3',
         label_func=age_class_label(cutoffs=[15, 40]),
-        print_errors=True,
-        transform=transforms.ToTensor()),
+        transform=transform),
 ])
 
 # Split dataset into training and validation sets

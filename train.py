@@ -19,11 +19,13 @@ def print_training_status(epoch_count, images_seen, train_loss, val_loss, elapse
 
 
 # TRAIN FUNCTION
-def train_model(model, train_set, val_set, model_save_dir='../models/',
+def train_model(model, train_set, val_set, model_save_dir='./trained_models/',
                  learning_rate=0.001, max_epochs=30, patience=3,
                 loss_fn=nn.CrossEntropyLoss(), is_autoencoder=False,
                 optim_fn=torch.optim.Adam, batch_size=64, filename_note=None):
     # Init variables
+    if not os.path.exists(model_save_dir):
+        os.makedirs(model_save_dir)
     model_save_name = (f'{model.__class__.__name__}-{model.num_outputs}'
                        + ((filename_note + '_') if filename_note else '_')
                        + strftime("%d%m-%H%M") + '.pt')
@@ -116,6 +118,7 @@ def train_model(model, train_set, val_set, model_save_dir='../models/',
         f'\nTraining took {training_time_s//60:.0f}m {training_time_s%60:02.0f}s',
         f'({training_time_s//epoch_count}s per epoch)' if epoch_count > 0 else '')
 
+    # Re-load best model from session to reverse overfitting
     if os.path.exists(model_save_path):
         print(f"\nBest model from session saved to '{model_save_path}'\n")
         model.load_state_dict(torch.load(model_save_path))
