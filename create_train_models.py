@@ -16,6 +16,16 @@ device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 #     max_size=None,
 #     transform=transforms.ToTensor())
 
+ds = FastDataset(
+    dir='../../../archive/datasets/gender/train_set',
+    label_func=dir_label_func,
+    processor=eyealign_border_80x100,
+    max_size=200,
+    transform=transforms.ToTensor())
+net = AlexNet(2).to(device)
+net.load_state_dict(torch.load('../models/AlexNet-2_gender_88.pt', map_location=device))
+tests.class_accuracy(net, ds, print_results=True)
+
 transform = transforms.Compose([
     transforms.ToTensor(),
     transforms.Normalize((0.5, 0.5 ,0.5), (0.25, 0.25, 0.25)),

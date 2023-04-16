@@ -34,7 +34,8 @@ def train_model(model, train_set, val_set, model_save_dir='./trained_models/',
     epoch_count = 0
     images_seen = 0
     best_val_loss = None
-    val_loss_history = []
+    patience_count = 0
+    restarted_epochs = 0
 
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     model.to(device)
@@ -92,18 +93,22 @@ def train_model(model, train_set, val_set, model_save_dir='./trained_models/',
             if best_val_loss is None or val_loss < best_val_loss:
                 torch.save(model.state_dict(), model_save_path)
                 best_val_loss = val_loss
+                patience_count = 0
+            else:
+                model.load_state_dict(torch.load(model_save_path))
+                patience_count += 1
+                restarted_epochs += 1
 
             # Display epoch results
             elapsed_time = time() - start_time
-            print_training_status(epoch_count, images_seen, train_loss,
+            print_training_status(epoch_count-restarted_epochs, images_seen, train_loss,
                                 val_loss, elapsed_time)
 
             # Stop training if val loss hasn't improved for a while
-            if epoch_count >= patience and val_loss >= val_loss_history[-patience]:
+            if patience_count >= patience:
                 print(f"\nHalting training - {patience} epochs without improvement")
+                model.load_state_dict(torch.load(model_save_path))
                 break
-
-            val_loss_history.append(val_loss)  # Append to history
 
 
     except KeyboardInterrupt:
