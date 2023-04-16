@@ -24,7 +24,7 @@ def train_model(model, train_set, val_set, model_save_dir='../models/',
                 loss_fn=nn.CrossEntropyLoss(), is_autoencoder=False,
                 optim_fn=torch.optim.Adam, batch_size=64, filename_note=None):
     # Init variables
-    model_save_name = (f'{model.__class__.__name__}'
+    model_save_name = (f'{model.__class__.__name__}-{model.num_outputs}'
                        + ((filename_note + '_') if filename_note else '_')
                        + strftime("%d%m-%H%M") + '.pt')
     model_save_path = os.path.join(model_save_dir, model_save_name)
@@ -59,7 +59,7 @@ def train_model(model, train_set, val_set, model_save_dir='../models/',
             model.train()  # Set model to training mode
             train_loss = 0
             for images, labels in tqdm(train_dataloader, leave=False,
-                                    desc=f'Epoch {epoch_count}') :  # iterate through batches
+                                    desc=f'Epoch {epoch_count+1}') :  # iterate through batches
                 images, labels = images.to(device), labels.to(device)  # Move to device
                 outputs = model(images)  # Forward pass
                 if isinstance(loss_fn, nn.MSELoss):
@@ -114,7 +114,7 @@ def train_model(model, train_set, val_set, model_save_dir='../models/',
 
     print(
         f'\nTraining took {training_time_s//60:.0f}m {training_time_s%60:02.0f}s',
-        f'({training_time_s//epoch_count}s per epoch)')
+        f'({training_time_s//epoch_count}s per epoch)' if epoch_count > 0 else '')
 
     if os.path.exists(model_save_path):
         print(f"\nBest model from session saved to '{model_save_path}'\n")

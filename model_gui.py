@@ -1,17 +1,15 @@
 import torch
 import cv2 as cv
 import numpy as np
-import preprocessors.eyealign_noborder_80x120
+import preprocessors.eyealign_border_80x100 as preprocessor
 from networks import *
 
 
-def run_models(input_img):
-    face_images, coords = preprocessors.eyealign_noborder_80x120.run(input_img)
-    for i in range(len(face_images)):
-        face_images[i] = cv.resize(face_images[i], (40, 60))
+def run_models(input_img, g_net, a_net):
+    g_preds, a_preds = [], []
+
+    face_images, coords = preprocessor.run(input_img)
     
-    # gender_preds, age_preds = [], []
-    gender_preds = []
     
     for i in range(len(face_images)):
         img = face_images[i]
@@ -20,16 +18,16 @@ def run_models(input_img):
         input = torch.from_numpy(input).float()
         input = input.unsqueeze(0)
 
-        this_face_gender = gender_cnn.predict(input)
-        # this_face_age = age_cnn.predict(input)
+        this_face_gender = g_net.predict(input)
+        this_face_age = a_net.predict(input)
 
-        gender_preds.append(this_face_gender)
-        # age_preds.append(this_face_age)
+        g_preds.append(this_face_gender)
+        a_preds.append(this_face_age)
         
-    return face_images, coords, gender_preds # , age_preds
+    return face_images, coords, g_preds, a_preds
 
 
-def visualize_model(input_img, coords, gender_preds): 
+def visualize_model(input_img, coords, g_preds, a_preds): 
     input_img = cv.addWeighted(input_img, 0.75, np.zeros(input_img.shape, input_img.dtype), 0, 0)
 
     for idx, e in enumerate(coords):
@@ -47,13 +45,13 @@ def visualize_model(input_img, coords, gender_preds):
                                     thickness=1)
         
         try:
-            this_gender = gender_preds[idx]
-            # this_age = age_preds[idx]
+            this_gender = g_preds[idx]
+            this_age = a_preds[idx]
 
             # add gender labels
             cv.putText(
                 input_img,
-                text=('female ' if this_gender==0 else 'male '),
+                text=('female ' if this_gender==0 else 'male ') + str(this_age),
                 org=(face_x, face_y-5),
                 fontFace=0,
                 fontScale=face_w/150,
@@ -65,10 +63,10 @@ def visualize_model(input_img, coords, gender_preds):
     return input_img
 
 
-def test_from_image(image_path, win_size=720):
+def test_from_image(image_path, g_net, a_net, win_size=720):
     image = cv.imread(image_path)
     win_title = image_path.split()[-1]
-    _, coords, gender_preds = run_models(image)
+    _, coords, g_preds, a_preds = run_models(image, g_net, a_net)
     
     # # resize image
     # scale = win_size/image.shape[1]
@@ -79,7 +77,7 @@ def test_from_image(image_path, win_size=720):
         for key, _ in coords[i].items():
             coords[i][key] *= 1.0#scale
 
-    image = visualize_model(image, coords, gender_preds)
+    image = visualize_model(image, coords, g_preds, a_preds)
 
     cv.imshow(win_title, image)
     cv.waitKey(0)
@@ -106,9 +104,10 @@ def test_from_cam(win_size=720):
 
 
 if __name__ == '__main__':
-    gender_model_path = 'models\LeNet5-2_13-04-02-41.pt'
+    g_net, g_path = LeNet4(2), '../models/LeNet414-04-19-20.pt'
+    a_net, a_path = AlexNet(4), '../models/AlexNet-4_1504-2037.pt'
 
-    gender_cnn = LeNet5(num_outputs=2)
-    gender_cnn.load_state_dict(torch.load(gender_model_path))
+    g_net.load_state_dict(torch.load(g_path))
+    a_net.load_state_dict(torch.load(a_path))
 
-    test_from_image('../archive/test images/disney.jpg')
+    test_from_image('../../../archive/test images/familyphoto.jpg', g_net, a_net)

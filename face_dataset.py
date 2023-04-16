@@ -10,13 +10,13 @@ from torchvision import transforms
 # cite https://pytorch.org/tutorials/beginner/data_loading_tutorial.html
 
 
-class FaceDataset(Dataset):
+class FastDataset(Dataset):
     def __init__(self, dir, label_func, processor=None, transform=None,
                  max_size=None, save_dir=None, print_errors=False, min_size=30,
-                 delete_bad_files=False):
-        self.dataframe = [] # Load entries into dataframe
-                            # This should be faster than reading each file
-                            # every time we want to access it
+                 delete_bad_files=False):#
+        # Load entries into dataframe in memory - faster than reading each file
+        # every time we need to access it
+        self.dataframe = []
 
         all_paths = []
         for root, _, files in os.walk(dir):
@@ -29,7 +29,7 @@ class FaceDataset(Dataset):
             all_paths = all_paths[:max_size]
 
         print('Reading' if processor is None else 'Reading and processing',
-              f'{len(all_paths)} files from {dir}...')
+            f'{len(all_paths)} files from {dir}...')
 
         if save_dir and os.path.exists(save_dir) is False:
             os.makedirs(save_dir)
@@ -45,13 +45,13 @@ class FaceDataset(Dataset):
                     # Run checks
                     if len(face_images) != 1:  # We want exactly 1 face per training image
                         if print_errors: print(f'Skipping {filename}:',
-                                               f'{len(face_images)} faces found in image',
-                                               '(1 required)')
+                                            f'{len(face_images)} faces found in image',
+                                            '(1 required)')
                         if delete_bad_files: os.remove(path)
                         continue
                     if min(coords[0]['face_w'], coords[0]['face_h']) < min_size:
                         if print_errors: print(f'Skipping {filename}:',
-                                               f'face width {coords["face_width"]} < {min_size}')
+                                            f'face width {coords["face_width"]} < {min_size}')
                         if delete_bad_files: os.remove(path)
                         continue
 
@@ -68,7 +68,7 @@ class FaceDataset(Dataset):
 
                 if label is None:
                     if print_errors: print(f'Skipping {filename}:',
-                                           'label function returned None')
+                                        'label function returned None')
                     if delete_bad_files: os.remove(path)
                     continue
 
@@ -86,7 +86,7 @@ class FaceDataset(Dataset):
                 # be possible -> improve robustness?
 
         print(f'{len(self.dataframe)} items successfully prepared ' + 
-               f'({len(all_paths)-len(self.dataframe)} bad items ' +
+            f'({len(all_paths)-len(self.dataframe)} bad items ' +
                 f'deleted)' if delete_bad_files else 'ignored)')
         
         if save_dir is not None:
@@ -102,33 +102,69 @@ class FaceDataset(Dataset):
     def __getitem__(self, index):
         entry = self.dataframe[index]
         return entry['image'], entry['label']
+
+
+class SlowDataset(Dataset):
+    # Loads images from disk every time they are requested
+    def __init__(self, dir, label_func, processor=None, transform=None,
+                 print_errors=False, min_size=30, delete_bad_files=False):
+        self.dir = dir
+        self.label_func = label_func
+        self.processor = processor
+        self.transform = transform
+        self.print_errors = print_errors
+        self.min_size = min_size
+        self.delete_bad_files = delete_bad_files
+
+        self.paths = []
+        for root, _, files in os.walk(dir):
+            for f in files:
+                self.paths.append(os.path.join(root, f))
+
+    def __len__(self):
+        return len(self.paths)
+
+    def __getitem__(self, index):
+        path = self.paths[index]
+
+        try:
+            filename = os.path.basename(path)
+
+            image = cv.imread(path)
+            if self.processor:
+                face_images, coords = self.processor.run(image)
+
+                # Run checks
+                if len(face_images) != 1:  # We want exactly 1 face per training image
+                    if self.print_errors: print(f'Skipping {filename}:',
+                                        f'{len(face_images)} faces found in image',
+                                        '(1 required)')
+                    if self.delete_bad_files: os.remove(path)
+                    return self.__getitem__(index+1)
+                    
+                if min(coords[0]['face_w'], coords[0]['face_h']) < self.min_size:
+                    if self.print_errors: print(f'Skipping {filename}:',
+                                        f'face width {coords["face_width"]} < {self.min_size}')
+                    if self.delete_bad_files: os.remove(path)
+                    return self.__getitem__(index+1)
+                    
+                image = face_images[0]
+
+            if self.transform:
+                image = self.transform(image)
+
+            # Get image class label from filename
+            label = self.label_func(filename)
+
+            if label is None:
+                if self.print_errors: print(f'Skipping {filename}:',
+                                    'label function returned None')
+                if self.delete_bad_files: os.remove(path)
+                return self.__getitem__(index+1)
+            
+        except Exception as e:
+            if self.print_errors: print(f'Skipping file {filename}: {e}')
+            if self.delete_bad_files: os.remove(path)
+            return self.__getitem__(index+1)
     
-    
-# Label extraction functions
-
-def binary_gender_label(filename):
-    # Infer gender class from filename
-    # e.g.  'F_30_1234.jpg' -> 0
-    #       'M_30_1234.jpg' -> 1
-    label = filename.split('_')[0].upper()
-    label = (0 if label == 'F'
-            else 1 if label == 'M'
-            else None)
-    return label
-
-def age_int_label(filename):
-    # Infer age from filename
-    # e.g.  'M_28_1234.jpg' -> 28
-    #       'F_41_1234.jpg' -> 41
-    label = int(filename.split('_')[1])
-    return label
-
-def age_float_label(filename):
-    # Infer age from filename
-    # e.g.  'M_28_1234.jpg' -> 28
-    #       'F_41_1234.jpg' -> 41
-    label = float(filename.split('_')[1])
-    return label
-
-def dir_label_func(f):
-    return int(f.split(' ')[0])
+        return image, label

@@ -18,7 +18,7 @@ detector = cv.FaceDetectorYN.create(
     model=detector_model_path,
     config="", # Custom config - leave blank
     input_size=(500, 500), # Default image input size - set later
-    score_threshold=0.99, # Confidence threshold to return a face
+    score_threshold=0.9, # Confidence threshold to return a face
     nms_threshold=0.3, # ? Check what this is
     top_k=5000) # ? Check what this is
 
