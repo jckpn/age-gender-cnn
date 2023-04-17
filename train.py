@@ -35,7 +35,6 @@ def train_model(model, train_set, val_set, model_save_dir='./trained_models/',
     images_seen = 0
     best_val_loss = None
     patience_count = 0
-    restarted_epochs = 0
 
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     model.to(device)
@@ -63,14 +62,14 @@ def train_model(model, train_set, val_set, model_save_dir='./trained_models/',
             train_loss = 0
             for images, labels in tqdm(train_dataloader, leave=False,
                                     desc=f'Epoch {epoch_count+1}') :  # iterate through batches
-                images, labels = images.to(device), labels.to(device)  # Move to device
+                # images, labels = images.to(device), labels.to(device)  # Move to device
                 outputs = model(images)  # Forward pass
                 if isinstance(loss_fn, nn.MSELoss):
                     outputs = outputs.to(torch.float32)
                     labels = labels.to(torch.float32)
                 # if is_autoencoder:
                 #     labels = images
-                loss = loss_fn(outputs.squeeze(), labels)
+                loss = loss_fn(outputs, labels)
                 optimizer.zero_grad()
                 loss.backward()
                 optimizer.step()
@@ -83,11 +82,12 @@ def train_model(model, train_set, val_set, model_save_dir='./trained_models/',
             val_loss = 0
             for images, labels in tqdm(val_dataloader, leave=False,
                                     desc=f'Testing epoch {epoch_count}'):
-                images, labels = images.to(device), labels.to(device)
+                # images, labels = images.to(device), labels.to(device)
                 outputs = model(images)
                 if isinstance(loss_fn, nn.MSELoss):
-                    outputs, labels = outputs.float(), labels.float()
-                loss = loss_fn(outputs.squeeze(), labels)
+                    outputs = outputs.to(torch.float32)
+                    labels = labels.to(torch.float32)
+                loss = loss_fn(outputs, labels)
                 val_loss += loss.item()
             val_loss /= len(val_dataloader)  # Average loss over batch
             if best_val_loss is None or val_loss < best_val_loss:
@@ -96,12 +96,12 @@ def train_model(model, train_set, val_set, model_save_dir='./trained_models/',
                 patience_count = 0
             else:
                 model.load_state_dict(torch.load(model_save_path))
+                print('Val loss increased - reloading best model...')
                 patience_count += 1
-                restarted_epochs += 1
 
             # Display epoch results
             elapsed_time = time() - start_time
-            print_training_status(epoch_count-restarted_epochs, images_seen, train_loss,
+            print_training_status(epoch_count, images_seen, train_loss,
                                 val_loss, elapsed_time)
 
             # Stop training if val loss hasn't improved for a while

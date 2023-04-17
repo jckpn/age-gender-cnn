@@ -87,7 +87,7 @@ class FastDataset(Dataset):
 
         print(f'{len(self.dataframe)} items successfully prepared ' + 
             f'({len(all_paths)-len(self.dataframe)} bad items ' +
-                f'deleted)' if delete_bad_files else 'ignored)')
+                (f'deleted)' if delete_bad_files else 'ignored)'))
         
         if save_dir is not None:
             if len(os.listdir(save_dir)) >= len(self.dataframe):

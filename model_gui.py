@@ -48,14 +48,19 @@ def visualize_model(input_img, coords, g_preds, a_preds):
             this_gender = g_preds[idx]
             this_age = a_preds[idx]
 
-            # add gender labels
+            # add labels
+            cv.rectangle(input_img,
+                         (face_x, face_y-14),
+                         (face_x+face_w, face_y),
+                         (255, 255, 255),
+                         -1) # fill rectangle
             cv.putText(
                 input_img,
-                text=('female ' if this_gender==0 else 'male ') + str(this_age),
-                org=(face_x, face_y-5),
+                text=('F' if this_gender==0 else 'M') + str(this_age),
+                org=(face_x+1, face_y-2),
                 fontFace=0,
-                fontScale=face_w/150,
-                color=(255,255,255),
+                fontScale=0.5,
+                color=(0,0,0),
                 thickness=1)
         except:
             continue
@@ -104,10 +109,10 @@ def test_from_cam(win_size=720):
 
 
 if __name__ == '__main__':
-    g_net, g_path = LeNet4(2), '../models/LeNet414-04-19-20.pt'
+    g_net, g_path = AlexNet(2), '../models/AlexNet-2_gender_88.pt'
     a_net, a_path = AlexNet(4), '../models/AlexNet-4_1504-2037.pt'
 
-    g_net.load_state_dict(torch.load(g_path))
-    a_net.load_state_dict(torch.load(a_path))
+    g_net.load_state_dict(torch.load(g_path, map_location=torch.device('cpu')))
+    a_net.load_state_dict(torch.load(a_path, map_location=torch.device('cpu')))
 
     test_from_image('../../../archive/test images/familyphoto.jpg', g_net, a_net)
