@@ -5,7 +5,7 @@ import os
 from random import shuffle
 from tqdm import tqdm as progress_bar
 from torch.utils.data import Dataset
-from torchvision import transforms
+from PIL import Image
 
 # cite https://pytorch.org/tutorials/beginner/data_loading_tutorial.html
 
@@ -61,6 +61,7 @@ class FastDataset(Dataset):
                         cv.imwrite(save_path, image)
 
                 if transform:
+                    image = Image.fromarray(image) # transform expects PIL image
                     image = transform(image)
 
                 # Get image class label from filename

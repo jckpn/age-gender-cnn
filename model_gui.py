@@ -1,7 +1,7 @@
 import torch
 import cv2 as cv
 import numpy as np
-import preprocessors.eyealign_border_80x100 as preprocessor
+import preprocessors.eyealign as preprocessor
 from networks import *
 
 
@@ -114,5 +114,7 @@ if __name__ == '__main__':
 
     g_net.load_state_dict(torch.load(g_path, map_location=torch.device('cpu')))
     a_net.load_state_dict(torch.load(a_path, map_location=torch.device('cpu')))
+    g_net.eval()
+    a_net.eval()
 
     test_from_image('../../../archive/test images/familyphoto.jpg', g_net, a_net)

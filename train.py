@@ -7,14 +7,16 @@ import os
 from tqdm import tqdm
 
 
-def print_training_status(epoch_count, images_seen, train_loss, val_loss, elapsed_time):
+def print_training_status(epoch_count, images_seen, train_loss, val_loss,
+                          elapsed_time, patience_count):
     print(
         # https://stackoverflow.com/a/8885688
-        f"{epoch_count:6.0f} |",
-        f"{images_seen:13} |",
-        f"{train_loss:10.3f} |",
-        f"{val_loss:8.3f} |",
-        f"{elapsed_time//60:9.0f}:{elapsed_time%60:02.0f}",
+        (f"| {epoch_count:13.0f}" if patience_count == 0
+         else f"| {epoch_count-patience_count:9.0f} ({patience_count})"),
+        f"| {images_seen:13}",
+        f"| {train_loss:13.3f}",
+        f"| {val_loss:13.3f}",
+        f"| {elapsed_time//60:10.0f}:{elapsed_time%60:02.0f} |",
     )
 
 
@@ -26,7 +28,7 @@ def train_model(model, train_set, val_set, model_save_dir='./trained_models/',
     # Init variables
     if not os.path.exists(model_save_dir):
         os.makedirs(model_save_dir)
-    model_save_name = (f'{model.__class__.__name__}-{model.num_outputs}'
+    model_save_name = (f'{model.__class__.__name__}-{model.num_classes}'
                        + ((filename_note + '_') if filename_note else '_')
                        + strftime("%d%m-%H%M") + '.pt')
     model_save_path = os.path.join(model_save_dir, model_save_name)
@@ -36,8 +38,9 @@ def train_model(model, train_set, val_set, model_save_dir='./trained_models/',
     best_val_loss = None
     patience_count = 0
 
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    model.to(device)
+    # move model to gpu for speed if available
+    if torch.cuda.is_available():
+        model.to('cuda')
 
     train_dataloader = DataLoader(train_set, batch_size, shuffle=True)
     val_dataloader = DataLoader(val_set, batch_size, shuffle=True)
@@ -50,7 +53,9 @@ def train_model(model, train_set, val_set, model_save_dir='./trained_models/',
     print(f' - Loss function: {loss_fn}')
     print(f' - Other notes: None' if not filename_note else f' - Other notes: {filename_note}')
     print()
-    print(' EPOCH | EXAMPLES SEEN | TRAIN LOSS | VAL LOSS | ELAPSED TIME')
+    print('+---------------+---------------+---------------+---------------+---------------+')
+    print('|         EPOCH | EXAMPLES SEEN |    TRAIN LOSS |      VAL LOSS |  ELAPSED TIME |')
+    print('+---------------+---------------+---------------+---------------+---------------+')
 
     start_time = time()  # Get start time to calculate training time later
 
@@ -62,14 +67,11 @@ def train_model(model, train_set, val_set, model_save_dir='./trained_models/',
             train_loss = 0
             for images, labels in tqdm(train_dataloader, leave=False,
                                     desc=f'Epoch {epoch_count+1}') :  # iterate through batches
-                # images, labels = images.to(device), labels.to(device)  # Move to device
+                if torch.cuda.is_available(): # can this be done to whole dataset instead?
+                    images, labels = images.to('cuda'), labels.to('cuda')
                 outputs = model(images)  # Forward pass
-                if isinstance(loss_fn, nn.MSELoss):
-                    outputs = outputs.to(torch.float32)
-                    labels = labels.to(torch.float32)
-                # if is_autoencoder:
-                #     labels = images
-                loss = loss_fn(outputs, labels)
+                loss = loss_fn(outputs, labels) if isinstance(loss_fn, nn.CrossEntropyLoss) \
+                    else loss_fn(outputs.float(), labels.float())
                 optimizer.zero_grad()
                 loss.backward()
                 optimizer.step()
@@ -82,12 +84,11 @@ def train_model(model, train_set, val_set, model_save_dir='./trained_models/',
             val_loss = 0
             for images, labels in tqdm(val_dataloader, leave=False,
                                     desc=f'Testing epoch {epoch_count}'):
-                # images, labels = images.to(device), labels.to(device)
+                if torch.cuda.is_available(): # can this be done to whole dataset instead?
+                    images, labels = images.to('cuda'), labels.to('cuda')
                 outputs = model(images)
-                if isinstance(loss_fn, nn.MSELoss):
-                    outputs = outputs.to(torch.float32)
-                    labels = labels.to(torch.float32)
-                loss = loss_fn(outputs, labels)
+                loss = loss_fn(outputs, labels) if isinstance(loss_fn, nn.CrossEntropyLoss) \
+                    else loss_fn(outputs.float(), labels.float())
                 val_loss += loss.item()
             val_loss /= len(val_dataloader)  # Average loss over batch
             if best_val_loss is None or val_loss < best_val_loss:
@@ -96,13 +97,13 @@ def train_model(model, train_set, val_set, model_save_dir='./trained_models/',
                 patience_count = 0
             else:
                 model.load_state_dict(torch.load(model_save_path))
-                print('Val loss increased - reloading best model...')
+                # print('Val loss increased - reloading best model...')
                 patience_count += 1
 
             # Display epoch results
             elapsed_time = time() - start_time
             print_training_status(epoch_count, images_seen, train_loss,
-                                val_loss, elapsed_time)
+                                val_loss, elapsed_time, patience_count)
 
             # Stop training if val loss hasn't improved for a while
             if patience_count >= patience:
@@ -114,6 +115,8 @@ def train_model(model, train_set, val_set, model_save_dir='./trained_models/',
     except KeyboardInterrupt:
         print(f"\nHalting training - keyboard interrupt")
         pass
+
+    print('+-------------------------------------------------------------------------+')
 
     # Calculate total training time
     end_time = time()
