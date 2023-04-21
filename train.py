@@ -66,7 +66,7 @@ TRAINING MODEL {model_save_name} WITH PARAMS:
             # Train model with training set
             model.train()  # Set model to training mode
             train_loss = 0
-            for images, labels in tqdm(train_dataloader, leave=False,
+            for images, labels in tqdm(train_dataloader, position=0, leave=False,
                                     desc=f'Epoch {epoch_count}') :  # iterate through batches
                 if torch.cuda.is_available(): # can this be done to whole dataset instead?
                     images, labels = images.to('cuda'), labels.to('cuda')
@@ -83,7 +83,7 @@ TRAINING MODEL {model_save_name} WITH PARAMS:
             # Test model with separate validation set
             model.eval()  # Set model to evaluation mode
             val_loss = 0
-            for images, labels in tqdm(val_dataloader, leave=False,
+            for images, labels in tqdm(val_dataloader, position=0, leave=False,
                                     desc=f'Testing epoch {epoch_count}'):
                 if torch.cuda.is_available(): # can this be done to whole dataset instead?
                     images, labels = images.to('cuda'), labels.to('cuda')

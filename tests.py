@@ -10,7 +10,7 @@ def class_accuracy(net, test_dataset, print_results=False):
     net.eval()
     acc = 0
     tests = 0
-    for images, labels in tqdm(test_dataloader, leave=False):
+    for images, labels in tqdm(test_dataloader, position=0, leave=False):
         images, labels = images.to(device), labels.to(device) # Move to device
         for idx, image in enumerate(images):
             image = image.unsqueeze(0)
@@ -30,7 +30,7 @@ def mae(net, test_dataset, print_results=False):
     net.eval()
     mae = 0
     tests = 0
-    for images, labels in tqdm(test_dataloader, leave=False):
+    for images, labels in tqdm(test_dataloader, position=0, leave=False):
         images, labels = images.to(device), labels.to(device) # Move to device
         for idx, image in enumerate(images):
             image = image.unsqueeze(0)
