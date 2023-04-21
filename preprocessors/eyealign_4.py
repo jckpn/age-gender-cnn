@@ -25,7 +25,7 @@ detector = cv.FaceDetectorYN.create(
 
 
 # Init GFPGAN face enhancer
-gfpgan_model_path = os.path.dirname(__file__) + '/gfpgan_models/GFPGANv1.3.pth'
+gfpgan_model_path = os.path.dirname(__file__) + '../../../other/gfpgan_models/GFPGANv1.3.pth'
 gfpgan = GFPGANer(model_path=gfpgan_model_path)
 
 

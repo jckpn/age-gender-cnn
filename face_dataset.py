@@ -24,8 +24,8 @@ class FastDataset(Dataset):
                 all_paths.append(os.path.join(root, f))
 
         # Shuffle and limit number of files if specified
+        shuffle(all_paths)
         if max_size is not None and max_size < len(all_paths):
-            shuffle(all_paths)
             all_paths = all_paths[:max_size]
 
         print('Reading' if processor is None else 'Reading and processing',

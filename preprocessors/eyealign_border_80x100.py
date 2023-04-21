@@ -7,13 +7,13 @@ import math
 # Customisable alignment params
 dest_w = 80    # Width of final image
 dest_h = 100    # Height of final image
-dest_eye_y = 0.475*dest_h   # Y coord of both eyes in final image
+dest_eye_y = 0.47*dest_h   # Y coord of both eyes in final image
 dest_eye_x = 0.35*dest_w    # X coord of left eye in final image
                             # (right eye gets calculated for symmetry)
 
 
 # Init detector
-detector_model_path = os.path.dirname(__file__) + "\\face_detection_models/face_detection_yunet_2022mar.onnx"
+detector_model_path = os.path.dirname(__file__) + "/face_detection_models/face_detection_yunet_2022mar.onnx"
 detector = cv.FaceDetectorYN.create(
     model=detector_model_path,
     config="", # Custom config - leave blank
