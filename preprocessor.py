@@ -5,10 +5,10 @@ import math
 
 
 # Customisable alignment params
-dest_w = 80    # Width of final image
-dest_h = 100    # Height of final image
-dest_eye_y = 0.47*dest_h   # Y coord of both eyes in final image
-dest_eye_x = 0.35*dest_w    # X coord of left eye in final image
+dest_w = 224    # Width of final image
+dest_h = 224    # Height of final image
+dest_eye_y = 0.5*dest_h   # Y coord of both eyes in final image
+dest_eye_x = 0.375*dest_w    # X coord of left eye in final image
                             # (right eye gets calculated for symmetry)
 
 
@@ -24,37 +24,34 @@ detector = cv.FaceDetectorYN.create(
 
 
 def eye_align(image, face_coords):
-    # calculate transformation matrix from above parameters:
-    # get translation
+    #  CALCULATE TRANSFORMATION MATRIX FROM ABOVE PARAMETERS
+    
+    # 1. get translation matrix
     dest_left_eye_x = dest_eye_x
     dest_right_eye_x = dest_w-dest_eye_x
     translate_x = dest_left_eye_x - face_coords["left_eye_x"]
     translate_y = dest_eye_y - face_coords["left_eye_y"]
 
-    # image = cv.line(image, (face_coords["right_eye_x"], face_coords["right_eye_y"]), (face_coords["left_eye_x"], face_coords["left_eye_y"]), (255,255,255), thickness=2)
-    # sohcahtoa to get angle of rotation for eye alignment
+    # 2. calc angle of eye misalignment with sohcahtoa
     opp = face_coords["right_eye_y"] - face_coords["left_eye_y"]
     adj = face_coords["right_eye_x"] - face_coords["left_eye_x"]
     if adj == 0: return None # avoid divide by zero error
     theta = math.atan(opp/adj)
 
-    # get scale factor
-    
-    if face_coords["left_eye_x"] - face_coords["right_eye_x"] == 0: return None
+    # 3. calc scale factor
+    if face_coords["left_eye_x"] == face_coords["right_eye_x"]: return None
     scale = (dest_left_eye_x - dest_right_eye_x) / (face_coords["left_eye_x"] -
                                               face_coords["right_eye_x"])
 
-    # create matrix
+    # 4. create alignment matrix from steps 2 and 3
     align_matrix = cv.getRotationMatrix2D(center=(int(face_coords["left_eye_x"]), int(
         face_coords["left_eye_y"])), angle=math.degrees(theta), scale=scale)
 
-    # add transformation coords to rotation matrix
+    # 5. apply translation to matrix to get final matrix
     align_matrix[0][2] += translate_x
     align_matrix[1][2] += translate_y
 
-    # apply matrix transformation to image and crop to specified width/height
-
-    #cv.resize(image, (int(d_width*scale), int(d_height*scale)))
+    # 6. apply matrix transformation to image and crop to specified width/height
     image = cv.warpAffine(image, align_matrix, (dest_w, dest_h))
     return image
 
@@ -103,7 +100,7 @@ def run(input_img):
 
 if __name__ == '__main__':
     # Test preprocessor
-    input_img = cv.imread('../../../../archive/group.jpg')
+    input_img = cv.imread('../../../archive/group.jpg')
 
     face_images, face_coords = run(input_img)
 

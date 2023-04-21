@@ -80,29 +80,6 @@ class LeNet(nn.Module):
         return pred
     
 
-# LeNet-4 - 2 conv layers, 2 linear layers
-class LeNet4(nn.Module):
-    def __init__(self, num_classes):
-        super().__init__()
-
-        self.num_classes = num_classes
-
-        self.layers = nn.Sequential(
-            nn.Conv2d(in_channels=1, out_channels=6, kernel_size=5),
-            nn.ReLU(),
-            nn.AvgPool2d(kernel_size=2),
-            nn.Conv2d(in_channels=6, out_channels=16, kernel_size=5),
-            nn.ReLU(),
-            nn.AvgPool2d(kernel_size=2),
-
-            nn.Flatten(1),
-
-            nn.LazyLinear(120),
-            nn.ReLU(),
-            nn.Linear(120, num_classes)
-        )
-
-
 # AlexNet - 5 conv layers, 3 linear layers
 class AlexNet(nn.Module):
     def __init__(self, num_classes, pretrained=False):

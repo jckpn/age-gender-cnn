@@ -24,7 +24,7 @@ def print_training_status(epoch_count, images_seen, train_loss, val_loss,
 def train_model(model, train_set, val_set, model_save_dir='./trained_models/',
                  learning_rate=0.0005, max_epochs=30, patience=3,
                 loss_fn=nn.CrossEntropyLoss(), is_autoencoder=False,
-                optim_fn=torch.optim.Adam, batch_size=64, filename_note=None):
+                optim_fn=torch.optim.Adam, batch_size=32, filename_note=None):
 
     # Init variables
     if not os.path.exists(model_save_dir):
@@ -97,7 +97,9 @@ TRAINING MODEL {model_save_name} WITH PARAMS:
                 best_val_loss = val_loss
                 patience_count = 0
             else:
-                model.load_state_dict(torch.load(model_save_path))
+                # Can load best model to start again, or keep going in case it
+                # starts improving again (uncomment):
+                # model.load_state_dict(torch.load(model_save_path))
                 patience_count += 1
 
             # Display epoch results
