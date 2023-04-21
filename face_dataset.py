@@ -3,16 +3,14 @@ import cv2 as cv
 import numpy as np
 import os
 from random import shuffle
-from tqdm import tqdm as progress_bar
+from tqdm import tqdm
 from torch.utils.data import Dataset
 from PIL import Image
-
-# cite https://pytorch.org/tutorials/beginner/data_loading_tutorial.html
 
 
 class FastDataset(Dataset):
     def __init__(self, dir, label_func, processor=None, transform=None,
-                 max_size=None, save_dir=None, print_errors=False, min_size=30,
+                 ds_size=None, save_dir=None, print_errors=False, min_size=30,
                  delete_bad_files=False):#
         # Load entries into dataframe in memory - faster than reading each file
         # every time we need to access it
@@ -25,8 +23,9 @@ class FastDataset(Dataset):
 
         # Shuffle and limit number of files if specified
         shuffle(all_paths)
-        if max_size is not None and max_size < len(all_paths):
-            all_paths = all_paths[:max_size]
+        if ds_size is not None:
+            new_len = int(ds_size*len(all_paths))
+            all_paths = all_paths[:new_len]
 
         print('Reading' if processor is None else 'Reading and processing',
             f'{len(all_paths)} files from {dir}...')
@@ -34,13 +33,15 @@ class FastDataset(Dataset):
         if save_dir and os.path.exists(save_dir) is False:
             os.makedirs(save_dir)
 
-        for path in progress_bar(all_paths):
+        pbar = tqdm(total=len(all_paths))
+
+        for path in all_paths:
             filename = os.path.basename(path)
 
             try:
                 image = cv.imread(path)
                 if processor:
-                    face_images, coords = processor.run(image)
+                    face_images, coords = processor(image)
 
                     # Run checks
                     if len(face_images) != 1:  # We want exactly 1 face per training image
@@ -75,6 +76,7 @@ class FastDataset(Dataset):
 
                 entry = {'image': image, 'label': label}
                 self.dataframe.append(entry)
+                pbar.update(1)
                 
             except Exception as e:
                 if print_errors: print(f'Skipping file {filename}: {e}')
@@ -121,6 +123,7 @@ class SlowDataset(Dataset):
         for root, _, files in os.walk(dir):
             for f in files:
                 self.paths.append(os.path.join(root, f))
+        shuffle(self.paths)
 
     def __len__(self):
         return len(self.paths)
@@ -133,7 +136,7 @@ class SlowDataset(Dataset):
 
             image = cv.imread(path)
             if self.processor:
-                face_images, coords = self.processor.run(image)
+                face_images, coords = self.processor(image)
 
                 # Run checks
                 if len(face_images) != 1:  # We want exactly 1 face per training image
@@ -152,6 +155,7 @@ class SlowDataset(Dataset):
                 image = face_images[0]
 
             if self.transform:
+                image = Image.fromarray(image) # transform expects PIL image
                 image = self.transform(image)
 
             # Get image class label from filename

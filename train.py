@@ -67,7 +67,7 @@ TRAINING MODEL {model_save_name} WITH PARAMS:
             model.train()  # Set model to training mode
             train_loss = 0
             for images, labels in tqdm(train_dataloader, leave=False,
-                                    desc=f'Epoch {epoch_count+1}') :  # iterate through batches
+                                    desc=f'Epoch {epoch_count}') :  # iterate through batches
                 if torch.cuda.is_available(): # can this be done to whole dataset instead?
                     images, labels = images.to('cuda'), labels.to('cuda')
                 optimizer.zero_grad()
