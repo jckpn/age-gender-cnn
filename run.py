@@ -3,7 +3,7 @@ from torch.utils.data import random_split
 from face_dataset import *
 from label_funcs import *
 from preprocessors import *
-from dstransforms import *
+from ds_transforms import *
 from networks import *
 import tests
 
