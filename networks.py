@@ -13,7 +13,7 @@ class BasicCNN(nn.Module):
             nn.ReLU(),
             nn.AvgPool2d(kernel_size=2),
 
-            nn.Flatten(1),
+            nn.Flatten(1), # Flatten conv output for linear layers
 
             nn.LazyLinear(num_classes)
         )
@@ -105,7 +105,7 @@ class LeNet5(nn.Module):
 
 # AlexNet - 5 conv layers, 3 linear layers
 class AlexNet(nn.Module):
-    def __init__(self, num_classes, pretrained):
+    def __init__(self, num_classes, pretrained=False):
         super().__init__()
         self.num_classes = num_classes
 
@@ -129,7 +129,7 @@ class AlexNet(nn.Module):
 
 # VGG16 - 13 conv layers, 3 linear layers
 class VGG16(nn.Module):
-    def __init__(self, num_classes, pretrained):
+    def __init__(self, num_classes, pretrained=False):
         super().__init__()
         self.num_classes = num_classes
 

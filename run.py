@@ -10,6 +10,7 @@ import tests
 ds = FastDataset(
     dir='../processed_datasets',
     label_func=binary_gender_label,
+    max_size=100,
     transform=alexnet_transform)
 
 # Split dataset into training and validation sets
@@ -20,7 +21,7 @@ train_set, val_set = random_split(ds, [train_size, val_size])
 print(f'Split dataset into {len(train_set)} training and {len(val_set)} validation examples')
 
 alexnet = train_model(
-    model=AlexNet(num_classes=2, pretrained=True),
+    model=AlexNet(num_classes=2, pretrained=False),
     learning_rate=0.0005,
     train_set=train_set,
     val_set=val_set)

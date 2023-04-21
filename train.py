@@ -25,6 +25,7 @@ def train_model(model, train_set, val_set, model_save_dir='./trained_models/',
                  learning_rate=0.001, max_epochs=30, patience=3,
                 loss_fn=nn.CrossEntropyLoss(), is_autoencoder=False,
                 optim_fn=torch.optim.Adam, batch_size=64, filename_note=None):
+
     # Init variables
     if not os.path.exists(model_save_dir):
         os.makedirs(model_save_dir)
@@ -33,7 +34,6 @@ def train_model(model, train_set, val_set, model_save_dir='./trained_models/',
                        + strftime("%d%m-%H%M") + '.pt')
     model_save_path = os.path.join(model_save_dir, model_save_name)
     optimizer = optim_fn(model.parameters(), learning_rate)
-    epoch_count = 0
     images_seen = 0
     best_val_loss = None
     patience_count = 0
@@ -45,23 +45,24 @@ def train_model(model, train_set, val_set, model_save_dir='./trained_models/',
     train_dataloader = DataLoader(train_set, batch_size, shuffle=True)
     val_dataloader = DataLoader(val_set, batch_size, shuffle=True)
 
-    print()
-    print(f'TRAINING MODEL {model_save_name} WITH PARAMS:')
-    print(f' - Architecture: {model.__class__.__name__}')
-    print(f' - Learning rate: {learning_rate}')
-    print(f' - Optimizer: {optimizer.__class__.__name__}')
-    print(f' - Loss function: {loss_fn}')
-    print(f' - Other notes: None' if not filename_note else f' - Other notes: {filename_note}')
-    print()
-    print('+---------------+---------------+---------------+---------------+---------------+')
-    print('|         EPOCH | EXAMPLES SEEN |    TRAIN LOSS |      VAL LOSS |  ELAPSED TIME |')
-    print('+---------------+---------------+---------------+---------------+---------------+')
+    print(f"""
+TRAINING MODEL {model_save_name} WITH PARAMS:
+ - Architecture: {model.__class__.__name__}
+ - Learning rate: {learning_rate}
+ - Optimizer: {optimizer.__class__.__name__}
+ - Loss function: {loss_fn}
+ - Other notes: {filename_note if filename_note else 'None'}
+
++---------------+---------------+---------------+---------------+---------------+
+|         EPOCH | EXAMPLES SEEN |    TRAIN LOSS |      VAL LOSS |  ELAPSED TIME |
++---------------+---------------+---------------+---------------+---------------+
+""", end='')
 
     start_time = time()  # Get start time to calculate training time later
 
     try: # For custom keyboard interrupt
         # TRAINING LOOP
-        for epoch_count in range(max_epochs):
+        for epoch_count in range(1, max_epochs+1):
             # Train model with training set
             model.train()  # Set model to training mode
             train_loss = 0
@@ -69,10 +70,10 @@ def train_model(model, train_set, val_set, model_save_dir='./trained_models/',
                                     desc=f'Epoch {epoch_count+1}') :  # iterate through batches
                 if torch.cuda.is_available(): # can this be done to whole dataset instead?
                     images, labels = images.to('cuda'), labels.to('cuda')
+                optimizer.zero_grad()
                 outputs = model(images)  # Forward pass
                 loss = loss_fn(outputs, labels) if isinstance(loss_fn, nn.CrossEntropyLoss) \
                     else loss_fn(outputs.float(), labels.float())
-                optimizer.zero_grad()
                 loss.backward()
                 optimizer.step()
                 train_loss += loss.item()
@@ -97,7 +98,6 @@ def train_model(model, train_set, val_set, model_save_dir='./trained_models/',
                 patience_count = 0
             else:
                 model.load_state_dict(torch.load(model_save_path))
-                # print('Val loss increased - reloading best model...')
                 patience_count += 1
 
             # Display epoch results
@@ -107,16 +107,21 @@ def train_model(model, train_set, val_set, model_save_dir='./trained_models/',
 
             # Stop training if val loss hasn't improved for a while
             if patience_count >= patience:
-                print(f"\nHalting training - {patience} epochs without improvement")
-                model.load_state_dict(torch.load(model_save_path))
+                halt_reason = 'patience'
                 break
 
 
     except KeyboardInterrupt:
-        print(f"\nHalting training - keyboard interrupt")
+        halt_reason = 'keyboard'
         pass
-
-    print('+-------------------------------------------------------------------------+')
+    
+    print('+---------------+---------------+---------------+---------------+---------------+')
+    if halt_reason == 'patience':
+        print(f"\nHalting training - {patience} epochs without improvement")
+    elif halt_reason == 'keyboard':
+        print(f"\nHalting training - stopped by user")
+    else:
+        print(f"\nHlating training - epoch limit ({max_epochs}) reached")
 
     # Calculate total training time
     end_time = time()
