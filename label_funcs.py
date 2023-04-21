@@ -17,7 +17,7 @@ def age_int_label(filename):
     label = int(filename.split('_')[1])
     return label
 
-def adience_gender_label(filename):
+def utkface_gender_label(filename):
     # Infer gender class from Adience filename
     # e.g.  '45_0_3_20170119171417728.jpg' -> 0 (male) -> 1 (to match other ds)
     label = int(filename.split('_')[1])

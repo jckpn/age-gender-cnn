@@ -33,7 +33,7 @@ class FastDataset(Dataset):
         if save_dir and os.path.exists(save_dir) is False:
             os.makedirs(save_dir)
 
-        pbar = tqdm(total=len(all_paths))
+        pbar = tqdm(total=len(all_paths), position=0, leave=False)
 
         for path in all_paths:
             filename = os.path.basename(path)
@@ -98,7 +98,8 @@ class FastDataset(Dataset):
             else:
                 print('Error saving dataset')
         
-
+        print() # newline
+        
     def __len__(self):
         return len(self.dataframe)
 
@@ -119,11 +120,16 @@ class SlowDataset(Dataset):
         self.min_size = min_size
         self.delete_bad_files = delete_bad_files
 
-        self.paths = []
+        self.all_paths = []
         for root, _, files in os.walk(dir):
             for f in files:
-                self.paths.append(os.path.join(root, f))
-        shuffle(self.paths)
+                self.all_paths.append(os.path.join(root, f))
+        shuffle(self.all_paths)
+
+        print('Found and shuffled',
+            f'{len(self.all_paths)} files from {dir}...')
+        
+        print() # newline
 
     def __len__(self):
         return len(self.paths)
