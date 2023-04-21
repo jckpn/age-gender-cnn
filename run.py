@@ -2,7 +2,7 @@ from train import train_model
 from torch.utils.data import random_split
 from face_dataset import *
 from label_funcs import *
-import preprocessors.eyealign_border_80x100 as preprocessor
+import preprocessors.eyealign as preprocessor
 from ds_transforms import *
 from networks import *
 import tests
