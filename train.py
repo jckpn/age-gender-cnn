@@ -22,7 +22,7 @@ def print_training_status(epoch_count, images_seen, train_loss, val_loss,
 
 # TRAIN FUNCTION
 def train_model(model, train_set, val_set, model_save_dir='./trained_models/',
-                 learning_rate=0.001, max_epochs=30, patience=3,
+                 learning_rate=0.0005, max_epochs=30, patience=3,
                 loss_fn=nn.CrossEntropyLoss(), is_autoencoder=False,
                 optim_fn=torch.optim.Adam, batch_size=64, filename_note=None):
 

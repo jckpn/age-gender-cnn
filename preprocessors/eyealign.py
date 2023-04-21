@@ -35,9 +35,12 @@ def eye_align(image, face_coords):
     # sohcahtoa to get angle of rotation for eye alignment
     opp = face_coords["right_eye_y"] - face_coords["left_eye_y"]
     adj = face_coords["right_eye_x"] - face_coords["left_eye_x"]
+    if adj == 0: return None # avoid divide by zero error
     theta = math.atan(opp/adj)
 
     # get scale factor
+    
+    if face_coords["left_eye_x"] - face_coords["right_eye_x"] == 0: return None
     scale = (dest_left_eye_x - dest_right_eye_x) / (face_coords["left_eye_x"] -
                                               face_coords["right_eye_x"])
 
