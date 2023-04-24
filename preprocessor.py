@@ -13,7 +13,7 @@ dest_eye_x = 0.375*dest_w    # X coord of left eye in final image
 
 
 # Init detector
-detector_model_path = os.path.dirname(__file__) + "/face_detection_models/face_detection_yunet_2022mar.onnx"
+detector_model_path = os.path.dirname(__file__) + "/face_detection_yunet_2022mar.onnx"
 detector = cv.FaceDetectorYN.create(
     model=detector_model_path,
     config="", # Custom config - leave blank
@@ -72,7 +72,7 @@ def run(input_img):
     input_img_w, input_img_h = input_img.shape[1], input_img.shape[0]
     detector.setInputSize((input_img_w, input_img_h))
     face_data = detector.detect(input_img)[1] # [0] is confidence [check this?], [1] is coords
-    if face_data is None:
+    if face_data is None or face_data.size == 0:
         return None # Cancel if detector fails
     
     face_imgs = []

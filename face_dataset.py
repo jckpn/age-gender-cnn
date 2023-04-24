@@ -9,11 +9,7 @@ from PIL import Image
 class FastDataset(Dataset):
     def __init__(self, dir, label_func, processor=None, transform=None,
                  ds_size=None, save_dir=None, print_errors=False, min_size=30,
-                 delete_bad_files=False):#
-        # Load entries into dataframe in memory - faster than reading each file
-        # every time we need to access it
-        self.dataframe = []
-
+                 delete_bad_files=False):
         all_paths = []
         for root, _, files in os.walk(dir):
             for f in files:
@@ -30,14 +26,19 @@ class FastDataset(Dataset):
         if save_dir and os.path.exists(save_dir) is False:
             os.makedirs(save_dir)
 
+        # Load entries into dataframe in memory - faster than reading each file
+        # every time we need to access it
+        self.dataframe = []
+
         pbar = tqdm(total=ds_size, position=0, leave=False)
 
-        i = 0
+        path_idx = 0
         while len(self.dataframe) < ds_size:
-            if i == len(all_paths):
+            if path_idx >= len(all_paths):
                 print('Ran out of entries - reusing files to fill specified size')
-            path = all_paths[i]
-            i += 1
+                path_idx = 0
+            path = all_paths[path_idx]
+            path_idx += 1
             
             filename = os.path.basename(path)
 
