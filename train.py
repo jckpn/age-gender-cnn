@@ -74,7 +74,7 @@ TRAINING MODEL {model_save_name} WITH PARAMS:
                 optimizer.zero_grad()
                 outputs = model(images)  # Forward pass
                 loss = loss_fn(outputs, labels) if isinstance(loss_fn, nn.CrossEntropyLoss) \
-                    else loss_fn(outputs.float(), labels.float().squeeze())
+                    else loss_fn(outputs.float(), labels.float())
                 loss.backward()
                 optimizer.step()
                 train_loss += loss.item()
@@ -90,7 +90,7 @@ TRAINING MODEL {model_save_name} WITH PARAMS:
                     images, labels = images.to('cuda'), labels.to('cuda')
                 outputs = model(images)
                 loss = loss_fn(outputs, labels) if isinstance(loss_fn, nn.CrossEntropyLoss) \
-                    else loss_fn(outputs.float(), labels.float().squeeze())
+                    else loss_fn(outputs.float(), labels.float())
                 val_loss += loss.item()
             val_loss /= len(val_dataloader)  # Average loss over batch
             if best_val_loss is None or val_loss < best_val_loss:

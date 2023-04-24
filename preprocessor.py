@@ -2,6 +2,7 @@ import cv2 as cv
 import os
 import numpy as np
 import math
+from PIL import Image
 
 
 # Customisable alignment params
@@ -71,10 +72,10 @@ def run(input_img):
     # Run face detector
     input_img_w, input_img_h = input_img.shape[1], input_img.shape[0]
     detector.setInputSize((input_img_w, input_img_h))
-    face_data = detector.detect(input_img)[1] # [0] is confidence [check this?], [1] is coords
-    if face_data is None or face_data.size == 0:
-        return None # Cancel if detector fails
-    
+    face_data = detector.detect(input_img)[1]
+    if face_data is None or len(face_data) == 0:
+        return [], [] # Return empty arrays if detector fails
+
     face_imgs = []
     all_face_coords = []
 
@@ -90,12 +91,10 @@ def run(input_img):
                        'right_eye_x': coords[6],
                        'right_eye_y': coords[7]}
 
-        aligned_img = eye_align(input_img, this_coords) # Align image with given coords
-        
-        if aligned_img is None: continue # Skip this face is alignment fails
-        aligned_eq = equalise(aligned_img) # Equalise image and add entry if alignment successful
-        all_face_coords.append(this_coords)
+        aligned_img = eye_align(input_img, this_coords)  # Align image with given coords
+        aligned_eq = equalise(aligned_img)  # Equalise image and add entry if alignment successful
         face_imgs.append(aligned_eq)
+        all_face_coords.append(this_coords)
 
     return face_imgs, all_face_coords
 
