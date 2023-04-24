@@ -13,10 +13,7 @@ dest_eye_x = 0.375*dest_w    # X coord of left eye in final image
 
 
 # Init detector
-# If you are running this yourself e.g. for testing, you will need to supply  your own
-# detector model. The one used in the report is available at:
-# https://github.com/opencv/opencv_zoo/tree/master/models/face_detection_yunet
-detector_model_path = os.path.dirname(__file__) + "/face_detection_yunet_2022mar.onnx"
+detector_model_path = os.path.dirname(__file__) + "/face_detection_models/face_detection_yunet_2022mar.onnx"
 detector = cv.FaceDetectorYN.create(
     model=detector_model_path,
     config="", # Custom config - leave blank
@@ -94,10 +91,11 @@ def run(input_img):
                        'right_eye_y': coords[7]}
 
         aligned_img = eye_align(input_img, this_coords) # Align image with given coords
-        if aligned_img:
-            aligned_eq = equalise(aligned_img) # Equalise image and add entry if alignment successful
-            all_face_coords.append(this_coords)
-            face_imgs.append(aligned_eq)
+        
+        if aligned_img is None: continue # Skip this face is alignment fails
+        aligned_eq = equalise(aligned_img) # Equalise image and add entry if alignment successful
+        all_face_coords.append(this_coords)
+        face_imgs.append(aligned_eq)
 
     return face_imgs, all_face_coords
 
