@@ -13,7 +13,10 @@ dest_eye_x = 0.375*dest_w    # X coord of left eye in final image
 
 
 # Init detector
-detector_model_path = os.path.dirname(__file__) + "/face_detection_models/face_detection_yunet_2022mar.onnx"
+# If you are running this yourself e.g. for testing, you will need to supply  your own
+# detector model. The one used in the report is available at:
+# https://github.com/opencv/opencv_zoo/tree/master/models/face_detection_yunet
+detector_model_path = os.path.dirname(__file__) + "/face_detection_yunet_2022mar.onnx"
 detector = cv.FaceDetectorYN.create(
     model=detector_model_path,
     config="", # Custom config - leave blank
