@@ -8,11 +8,10 @@ from tqdm import tqdm
 
 
 def print_training_status(epoch_count, images_seen, train_loss, val_loss,
-                          elapsed_time, patience_count):
+                          elapsed_time):
     print(
         # https://stackoverflow.com/a/8885688
-        (f"| {epoch_count:13.0f}" if patience_count == 0
-         else f"| {epoch_count-patience_count:9.0f} ({patience_count})"),
+        f"| {epoch_count:13.0f}",
         f"| {images_seen:13}",
         f"| {train_loss:13.3f}",
         f"| {val_loss:13.3f}",
@@ -36,7 +35,9 @@ def train_model(model, train_set, val_set, model_save_dir='./trained_models/',
     optimizer = optim_fn(model.parameters(), learning_rate)
     images_seen = 0
     best_val_loss = None
+    last_val_loss = None
     patience_count = 0
+    halt_reason = None
 
     # move model to gpu for speed if available
     if torch.cuda.is_available():
@@ -73,7 +74,7 @@ TRAINING MODEL {model_save_name} WITH PARAMS:
                 optimizer.zero_grad()
                 outputs = model(images)  # Forward pass
                 loss = loss_fn(outputs, labels) if isinstance(loss_fn, nn.CrossEntropyLoss) \
-                    else loss_fn(outputs.float(), labels.float())
+                    else loss_fn(outputs.float(), labels.float()) / batch_size
                 loss.backward()
                 optimizer.step()
                 train_loss += loss.item()
@@ -89,23 +90,26 @@ TRAINING MODEL {model_save_name} WITH PARAMS:
                     images, labels = images.to('cuda'), labels.to('cuda')
                 outputs = model(images)
                 loss = loss_fn(outputs, labels) if isinstance(loss_fn, nn.CrossEntropyLoss) \
-                    else loss_fn(outputs.float(), labels.float())
+                    else loss_fn(outputs.float(), labels.float()) / batch_size
                 val_loss += loss.item()
             val_loss /= len(val_dataloader)  # Average loss over batch
             if best_val_loss is None or val_loss < best_val_loss:
                 torch.save(model.state_dict(), model_save_path)
                 best_val_loss = val_loss
-                patience_count = 0
+            
+            if last_val_loss and val_loss > last_val_loss:
+                patience_count += 1
             else:
                 # Can load best model to start again, or keep going in case it
                 # starts improving again (uncomment):
                 # model.load_state_dict(torch.load(model_save_path))
-                patience_count += 1
+                patience_count = 0
+            last_val_loss = val_loss
 
             # Display epoch results
             elapsed_time = time() - start_time
             print_training_status(epoch_count, images_seen, train_loss,
-                                val_loss, elapsed_time, patience_count)
+                                val_loss, elapsed_time)
 
             # Stop training if val loss hasn't improved for a while
             if patience_count >= patience:
@@ -118,12 +122,13 @@ TRAINING MODEL {model_save_name} WITH PARAMS:
         pass
     
     print('+---------------+---------------+---------------+---------------+---------------+')
-    if halt_reason == 'patience':
+    
+    if halt_reason is None:
+        print(f"\nHlating training - epoch limit ({max_epochs}) reached")
+    elif halt_reason == 'patience':
         print(f"\nHalting training - {patience} epochs without improvement")
     elif halt_reason == 'keyboard':
         print(f"\nHalting training - stopped by user")
-    else:
-        print(f"\nHlating training - epoch limit ({max_epochs}) reached")
 
     # Calculate total training time
     end_time = time()

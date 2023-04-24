@@ -90,11 +90,11 @@ def run(input_img):
                        'right_eye_x': coords[6],
                        'right_eye_y': coords[7]}
 
-        all_face_coords.append(this_coords)
-
-        this_face_img = eye_align(input_img, this_coords) # Align image with coords
-        this_face_img = equalise(this_face_img) # Equalise image
-        face_imgs.append(this_face_img)
+        aligned_img = eye_align(input_img, this_coords) # Align image with given coords
+        if aligned_img:
+            aligned_eq = equalise(aligned_img) # Equalise image and add entry if alignment successful
+            all_face_coords.append(this_coords)
+            face_imgs.append(aligned_eq)
 
     return face_imgs, all_face_coords
 

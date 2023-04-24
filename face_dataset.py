@@ -1,6 +1,4 @@
-import torch
 import cv2 as cv
-import numpy as np
 import os
 from random import shuffle
 from tqdm import tqdm
@@ -24,19 +22,33 @@ class FastDataset(Dataset):
         # Shuffle and limit number of files if specified
         shuffle(all_paths)
         if ds_size is not None:
-            new_len = int(ds_size*len(all_paths))
-            all_paths = all_paths[:new_len]
+            if ds_size < 1: ds_size = int(ds_size*len(all_paths))
 
         print('Reading' if processor is None else 'Reading and processing',
-            f'{len(all_paths)} files from {dir}...')
+            f'{ds_size} files from {dir}...')
 
         if save_dir and os.path.exists(save_dir) is False:
             os.makedirs(save_dir)
 
-        pbar = tqdm(total=len(all_paths), position=0, leave=False)
+        pbar = tqdm(total=ds_size, position=0, leave=False)
 
-        for path in all_paths:
+        i = 0
+        while len(self.dataframe) < ds_size:
+            if i == len(all_paths):
+                print('Ran out of entries - reusing files to fill specified size')
+            path = all_paths[i]
+            i += 1
+            
             filename = os.path.basename(path)
+
+            # Get image class label from filename
+            label = label_func(filename)
+
+            if label is None:
+                if print_errors: print(f'Skipping {filename}:',
+                                    'label function returned None')
+                if delete_bad_files: os.remove(path)
+                continue
 
             try:
                 image = cv.imread(path)
@@ -65,15 +77,6 @@ class FastDataset(Dataset):
                     image = Image.fromarray(image) # transform expects PIL image
                     image = transform(image)
 
-                # Get image class label from filename
-                label = label_func(filename)
-
-                if label is None:
-                    if print_errors: print(f'Skipping {filename}:',
-                                        'label function returned None')
-                    if delete_bad_files: os.remove(path)
-                    continue
-
                 entry = {'image': image, 'label': label}
                 self.dataframe.append(entry)
                 pbar.update(1)
@@ -88,7 +91,7 @@ class FastDataset(Dataset):
                 # would require multiple labels but would
                 # be possible -> improve robustness?
 
-        print(f'{len(self.dataframe)} items successfully prepared ' + 
+        print(f'\n{len(self.dataframe)} items successfully prepared ' + 
             f'({len(all_paths)-len(self.dataframe)} bad items ' +
                 (f'deleted)' if delete_bad_files else 'ignored)'))
         

@@ -10,20 +10,29 @@ def binary_gender_label(filename):
             else None)
     return label
 
-def age_int_label(filename):
+def age_int_label(filename, gender=None):
     # Infer age from filename
     # e.g.  'M_28_1234.jpg' -> 28
     #       'F_41_1234.jpg' -> 41
+    if gender is not None and binary_gender_label(filename) is not gender:
+        return None
+
     label = int(filename.split('_')[1])
     return label
 
-def utkface_gender_label(filename):
-    # Infer gender class from Adience filename
+def utkface_gcender_label(filename):
     # e.g.  '45_0_3_20170119171417728.jpg' -> 0 (male) -> 1 (to match other ds)
     label = int(filename.split('_')[1])
     label = (1 if label == 0 # gender labels are opposite of other datasets
             else 0 if label == 1
             else None)
+    return label
+
+def utkface_age_label(filename, gender=None):
+    if gender is not None and utkface_gcender_label(filename) is not gender:
+        return None
+    
+    label = int(filename.split('_')[0])
     return label
 
 # def age_float_label(filename):
