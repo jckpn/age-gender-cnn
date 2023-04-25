@@ -1,6 +1,6 @@
 # 📖 Predicting Age and Gender From Facial Images With Deep Neural Networks
 
-## ❓ What is this?
+## What is this?
 
 This repository contains the source code and runnable GUI for a CNN-based facial feature extractor, which predicts the gender and age of subjects from images or live video. This project was undertaken as my chosen Final Year Project (22COZ250) at Loughborough University.
 
