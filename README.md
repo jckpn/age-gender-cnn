@@ -31,7 +31,16 @@ Download the OpenCV face detection model from [here](https://github.com/opencv/o
 
 
 ## 💻 Use
-To test the models on an image, you can run:
+
+Activate the conda environment you cloned earlier:
+
+```sh
+conda activate fyp
+```
+
+### Run with image
+
+To test the model on a specified image, you can run:
 
 ```sh
 python3 visualise.py --image-path path/to/image
@@ -39,14 +48,19 @@ python3 visualise.py --image-path path/to/image
 
 You can use an image of your own, or use one of the example images from `examples`.
 
-To use the models with live video, use:
+### Run with webcam
+
+To test the model with live video, run visualise.py without the --image-path argument:
 
 ```sh
-python3 visualise.py --camera
+python3 visualise.py
 ```
 
 This will run the model in real-time using the first detected webcam as a live input.
 
+### Additional arguments
+
+You can use `--show-processed` to see the pre-processed facial images alongside the model output.
 
 ## 🤖 Training your own models
 
