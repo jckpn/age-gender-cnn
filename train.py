@@ -20,7 +20,7 @@ def print_training_status(epoch_count, images_seen, train_loss, val_loss,
 
 
 # TRAIN FUNCTION
-def train_model(model, train_set, val_set, model_save_dir='./trained_models/',
+def train_model(model, train_set, val_set, model_save_dir='./models/',
                  learning_rate=0.0005, max_epochs=30, patience=3,
                 loss_fn=nn.CrossEntropyLoss(), is_autoencoder=False,
                 optim_fn=torch.optim.Adam, batch_size=32, filename_note=None):
@@ -74,7 +74,7 @@ TRAINING MODEL {model_save_name} WITH PARAMS:
                 optimizer.zero_grad()
                 outputs = model(images)  # Forward pass
                 loss = loss_fn(outputs, labels) if isinstance(loss_fn, nn.CrossEntropyLoss) \
-                    else loss_fn(outputs.float(), labels.float())
+                    else loss_fn(outputs, labels.float()) / batch_size
                 loss.backward()
                 optimizer.step()
                 train_loss += loss.item()
@@ -90,7 +90,7 @@ TRAINING MODEL {model_save_name} WITH PARAMS:
                     images, labels = images.to('cuda'), labels.to('cuda')
                 outputs = model(images)
                 loss = loss_fn(outputs, labels) if isinstance(loss_fn, nn.CrossEntropyLoss) \
-                    else loss_fn(outputs.float(), labels.float())
+                    else loss_fn(outputs, labels.float()) / batch_size
                 val_loss += loss.item()
             val_loss /= len(val_dataloader)  # Average loss over batch
             if best_val_loss is None or val_loss < best_val_loss:

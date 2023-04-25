@@ -24,8 +24,6 @@ class FastDataset(Dataset):
 
         print('Reading' if processor is None else 'Reading and processing',
             f'{ds_size} files from {dir}...')
-        if equalise:
-            print(f'Equalising classes to {ds_size/classes} per class...')
 
         # Load entries into dataframe in memory - faster than reading each file
         # every time we need to access it
@@ -34,12 +32,13 @@ class FastDataset(Dataset):
         pbar = tqdm(total=ds_size, position=0, leave=False)
 
         # init eq requirements
+        class_goal = ds_size//classes
         eq_requirements = []
-        if classes is not None:
+        if equalise and classes is not None:
             for i in range(classes):
                 requirement = {'class': i, 'count': 0, 'aug_count': 0}
                 eq_requirements.append(requirement)
-        class_goal = ds_size//classes
+            print(f'Equalising to {class_goal} entries per class...')
 
         path_idx = 0
         cycles = 0
@@ -120,7 +119,7 @@ class FastDataset(Dataset):
 
 class SlowDataset(Dataset):
     # Loads images from disk every time they are requested
-    def __init__(self, dir, label_func, processor=None, transform=None,
+    def __init__(self, dir, label_func, transform, processor=None,
                  print_errors=False, min_size=30, ds_size=None,
                  delete_bad_files=False, equalise=False, classes=None,
                  augment=False):
@@ -153,15 +152,15 @@ class SlowDataset(Dataset):
         for i in range(classes):
             requirement = {'class': i, 'count': 0}
             self.eq_requirements.append(requirement)
+        self.class_goal = ds_size//classes
         
         print() # newline
 
     def __len__(self):
-        return len(self.paths)
+        return self.ds_size
 
     def __getitem__(self, index):
-        path = self.paths[index]
-        self.count += 1
+        path = self.all_paths[index % len(self.all_paths)]
 
         try:
             filename = os.path.basename(path)
@@ -174,31 +173,16 @@ class SlowDataset(Dataset):
                                     'label function returned None')
                 if self.delete_bad_files: os.remove(path)
                 return self.__getitem__(index+1)
-            elif self.equalise and self.eq_requirements[label]['count'] > self.ds_size/self.classes:
+            elif self.equalise and self.eq_requirements[label]['count'] > self.class_goal:
                 return self.__getitem__(index+1) # skip if we have enough of this class
 
             image = cv.imread(path)
             if self.processor:
                 face_images, coords = self.processor(image)
-
-                # Run checks
-                if len(face_images) != 1:  # want exactly 1 face per training image
-                    if self.print_errors: print(f'Skipping {filename}:',
-                                        f'{len(face_images)} faces found in image',
-                                        '(1 required)')
-                    if self.delete_bad_files: os.remove(path)
-                    return self.__getitem__(index+1)
-                    
-                if min(coords[0]['face_w'], coords[0]['face_h']) < self.min_size:
-                    if self.print_errors: print(f'Skipping {filename}:',
-                                        f'face width {coords["face_width"]} < {self.min_size}')
-                    if self.delete_bad_files: os.remove(path)
-                    return self.__getitem__(index+1)
-                    
                 image = face_images[0]
 
             image = Image.fromarray(image) # transform expects PIL image
-            if self.augment and self.count/self.ds_size > 1: # Have used all data in dataset
+            if self.augment and index > len(self.all_paths): # Have used all data in dataset
                     # Randomly apply various augmentations to bolster dataset
                 image = transforms.Compose([
                     transforms.RandomHorizontalFlip(),

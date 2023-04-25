@@ -8,43 +8,27 @@ from ds_transforms import *
 from networks import *
 import tests
 
-processor = preprocessor.run
-transform = alexnet_transform(224)
+# Define datasets
+processor = preprocessor.processor(w=50, h=50)
+transform = lenet_transform(size=50)
 
-adience_gender_ds = FastDataset(
-    'C:\\Users\\jckpn\\Documents\\YEAR 3 PROJECT\\implementation\\source\\datasets\\training\\adience',
-    binary_gender_label, transform, processor, ds_size=5000, equalise=False, classes=2, augment=False, print_errors=False)
-
-imdb_gender_ds = FastDataset(
-    'C:\\Users\\jckpn\\Documents\\YEAR 3 PROJECT\\implementation\\source\\other\\imdb_crop',
-    binary_gender_label, transform, processor, ds_size=5000, equalise=False, classes=2, augment=False, print_errors=False) #, print_errors=False)
-
-wiki_gender_ds = FastDataset(
-    'C:\\Users\\jckpn\\Documents\\YEAR 3 PROJECT\\implementation\\source\\datasets\\training\\raw_imdbwiki_crop\\wiki_crop',
-    binary_gender_label, transform, processor, ds_size=5000, equalise=False, classes=2, augment=False, print_errors=False)
-
-utkface_gender_ds = FastDataset(
-    'C:\\Users\\jckpn\\Documents\\YEAR 3 PROJECT\\implementation\\source\\utkface_itw',
-    utkface_gender_label, transform, processor, ds_size=1000, equalise=True, classes=2, augment=False, print_errors=False)
-
-# adience_age_ds = FastDataset(
+# adience_gender_ds = SlowDataset(
 #     'C:\\Users\\jckpn\\Documents\\YEAR 3 PROJECT\\implementation\\source\\datasets\\training\\adience',
-#     binary_gender_label, transform, processor, ds_size=1000, equalise=False, classes=2, augment=False, print_errors=True)
+#     age_label_all, transform, processor, ds_size=50, equalise=True, classes=2, augment=False, print_errors=False)
 
-# imdb_age_ds = FastDataset(
-#     'C:\\Users\\jckpn\\Documents\\YEAR 3 PROJECT\\implementation\\source\\other\\imdb_crop',
-#     binary_gender_label, transform, processor, ds_size=1000, equalise=False, classes=100, augment=False, print_errors=True) #, print_errors=False)
+imdb_gender_ds = SlowDataset(
+    'C:\\Users\\jckpn\\Documents\\YEAR 3 PROJECT\\implementation\\source\\other\\imdb_crop',
+    age_label_all, transform, processor, ds_size=50, equalise=True, classes=100, augment=False, print_errors=False) #, print_errors=False)
 
-# wiki_age_ds = FastDataset(
-#     'C:\\Users\\jckpn\\Documents\\YEAR 3 PROJECT\\implementation\\source\\datasets\\training\\raw_imdbwiki_crop\\wiki_crop',
-#     binary_gender_label, transform, processor, ds_size=1000, equalise=False, classes=100, augment=False, print_errors=True)
+wiki_gender_ds = SlowDataset(
+    'C:\\Users\\jckpn\\Documents\\YEAR 3 PROJECT\\implementation\\source\\datasets\\training\\raw_imdbwiki_crop\\wiki_crop',
+    age_label_all, transform, processor, ds_size=50, equalise=True, classes=100, augment=False, print_errors=False)
 
-# utkface_age_ds = FastDataset(
-#     'C:\\Users\\jckpn\\Documents\\YEAR 3 PROJECT\\implementation\\source\\utkface_itw',
-#     utkface_gender_label, transform, processor, ds_size=1000, equalise=False, classes=100, augment=False, print_errors=True)
+utkface_gender_ds = SlowDataset(
+    'C:\\Users\\jckpn\\Documents\\YEAR 3 PROJECT\\implementation\\source\\utkface_itw',
+    age_label_all_utk, transform, processor, ds_size=50, equalise=True, classes=100, augment=False, print_errors=False)
     
-
-train_val_set = ConcatDataset([wiki_gender_ds, imdb_gender_ds, adience_gender_ds])
+train_val_set = ConcatDataset([wiki_gender_ds, imdb_gender_ds, utkface_gender_ds])
 
 # Split dataset into training and validation sets
 val_split_ratio = 0.2
@@ -53,7 +37,7 @@ train_size = len(train_val_set) - val_size
 train_set, val_set = random_split(train_val_set, [train_size, val_size])
 print(f'Split dataset into {len(train_set)} training and {len(val_set)} validation examples')
 
-test_set = utkface_gender_ds
+test_set = val_set
 
-model = train_model(AlexNet(2), train_set, val_set)
+model = train_model(LeNet(1), train_set, val_set, loss_fn=nn.MSELoss(), model_save_dir='../models')
 tests.mae(model, test_set, print_results=True)

@@ -5,14 +5,6 @@ import math
 from PIL import Image
 
 
-# Customisable alignment params
-dest_w = 224    # Width of final image
-dest_h = 224    # Height of final image
-dest_eye_y = 0.5*dest_h   # Y coord of both eyes in final image
-dest_eye_x = 0.375*dest_w    # X coord of left eye in final image
-                            # (right eye gets calculated for symmetry)
-
-
 # Init detector
 detector_model_path = os.path.dirname(__file__) + "/face_detection_yunet_2022mar.onnx"
 detector = cv.FaceDetectorYN.create(
@@ -24,14 +16,14 @@ detector = cv.FaceDetectorYN.create(
     top_k=5000) # ? Check what this is
 
 
-def eye_align(image, face_coords):
+def eye_align(image, face_coords, dest_w, dest_h, dest_eye_x, dest_eye_y):
     #  CALCULATE TRANSFORMATION MATRIX FROM ABOVE PARAMETERS
     
     # 1. get translation matrix
-    dest_left_eye_x = dest_eye_x
-    dest_right_eye_x = dest_w-dest_eye_x
+    dest_left_eye_x = dest_eye_x*dest_w
+    dest_right_eye_x = dest_w-dest_left_eye_x
     translate_x = dest_left_eye_x - face_coords["left_eye_x"]
-    translate_y = dest_eye_y - face_coords["left_eye_y"]
+    translate_y = dest_eye_y*dest_h - face_coords["left_eye_y"]
 
     # 2. calc angle of eye misalignment with sohcahtoa
     opp = face_coords["right_eye_y"] - face_coords["left_eye_y"]
@@ -67,42 +59,47 @@ def equalise(input_img):
     img_eq = cv.merge((r_eq, g_eq, b_eq))
     return img_eq
 
+def processor(eye_x_frac=0.3, eye_y_frac=0.4, w=224, h=224):
+    # Create processor function based on given alignment params
+    def run(input_img):
+        # Run face detector
+        input_img_w, input_img_h = input_img.shape[1], input_img.shape[0]
+        detector.setInputSize((input_img_w, input_img_h))
+        face_data = detector.detect(input_img)[1]
+        if face_data is None or len(face_data) == 0:
+            return [], [] # Return empty arrays if detector fails
 
-def run(input_img):
-    # Run face detector
-    input_img_w, input_img_h = input_img.shape[1], input_img.shape[0]
-    detector.setInputSize((input_img_w, input_img_h))
-    face_data = detector.detect(input_img)[1]
-    if face_data is None or len(face_data) == 0:
-        return [], [] # Return empty arrays if detector fails
+        face_imgs = []
+        all_face_coords = []
 
-    face_imgs = []
-    all_face_coords = []
+        for entry in face_data:
+            # Get face coords
+            coords = entry[:-1].astype(np.int32)
+            this_coords = {'face_x': coords[0],
+                        'face_y': coords[1],
+                        'face_w': coords[2],
+                        'face_h': coords[3],
+                        'left_eye_x': coords[4],
+                        'left_eye_y': coords[5],
+                        'right_eye_x': coords[6],
+                        'right_eye_y': coords[7]}
 
-    for entry in face_data:
-        # Get face coords
-        coords = entry[:-1].astype(np.int32)
-        this_coords = {'face_x': coords[0],
-                       'face_y': coords[1],
-                       'face_w': coords[2],
-                       'face_h': coords[3],
-                       'left_eye_x': coords[4],
-                       'left_eye_y': coords[5],
-                       'right_eye_x': coords[6],
-                       'right_eye_y': coords[7]}
+            aligned_img = eye_align(input_img, this_coords, w, h, eye_x_frac, eye_y_frac)
+            aligned_eq = equalise(aligned_img)
+            face_imgs.append(aligned_eq)
+            all_face_coords.append(this_coords)
 
-        aligned_img = eye_align(input_img, this_coords)  # Align image with given coords
-        aligned_eq = equalise(aligned_img)  # Equalise image and add entry if alignment successful
-        face_imgs.append(aligned_eq)
-        all_face_coords.append(this_coords)
+        return face_imgs, all_face_coords
+    return run
 
-    return face_imgs, all_face_coords
+
+
 
 if __name__ == '__main__':
     # Test preprocessor
     input_img = cv.imread('../../../archive/group.jpg')
 
-    face_images, face_coords = run(input_img)
+    face_images, face_coords = processor()(input_img)
 
     for entry in face_coords:
         
