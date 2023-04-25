@@ -6,7 +6,7 @@ This repository contains the source code and runnable GUI for a CNN-based facial
 
 For more details on the project's development, as well as an in-depth review of the current state of automatic facial feature classifiers, see the `report.pdf`.
 
-*Children as young as three are intrinsically capable of recognising these traits by glancing at a person's face, yet encoding this ability into a mathematical model or computer program has remained a difficult challenge for many decades. However, recent advances in machine learning and the advent of convolutional neural networks have allowed researchers to replicate similar perceptive skills on computers to a remarkable degree.*
+*Children as young as three are intrinsically capable of recognising these traits by glancing at a person's face, yet encoding this ability into a mathematical model or computer program has remained a difficult challenge for many decades. However, recent advances in machine learning and the advent of convolutional neural networks have allowed researchers to replicate similar perceptive skills on computers to a remarkable degree.* (from report abstract)
 
 
 ## ⚙️ Installation
