@@ -27,7 +27,7 @@ Clone the conda environment and install relevant packages:
 conda env create -f environment.yml
 ```
 
-Download the OpenCV face detection model from [here](https://github.com/opencv/opencv_zoo/blob/master/models/face_detection_yunet/face_detection_yunet_2022mar.onnx?raw=true) and place it in the `age-gender-cnn` installation folder.
+Download the OpenCV face detection model from [here](https://github.com/opencv/opencv_zoo/blob/master/models/face_detection_yunet/face_detection_yunet_2022mar.onnx?raw=true) and place it in the `age-gender-cnn` installation folder. (This file cannot be included due to copyright)
 
 
 ## 💻 Use
