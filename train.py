@@ -9,7 +9,6 @@ from tqdm import tqdm
 def print_training_status(epoch_count, images_seen, train_loss, val_loss,
                           elapsed_time, patience_count):
     print(
-        f"\033[F", # https://stackoverflow.com/a/53377938
         # https://stackoverflow.com/a/8885688
         f"| {'*' * patience_count:10}{epoch_count:3.0f}",
         f"| {images_seen:13}",
