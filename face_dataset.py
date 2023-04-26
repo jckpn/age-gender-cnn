@@ -6,9 +6,15 @@ from torch.utils.data import Dataset
 from PIL import Image
 from torchvision import transforms
 from random import randint
+from time import time, strftime
+import torch
+import shutil
 
 
-class FastDataset(Dataset):
+class MemoryDataset(Dataset):
+    # Load entries into dataframe in memory - faster than reading each file
+    # every time we need to access it, but requires enough RAM to store
+
     def __init__(self, dir, label_func, transform, processor=None,
                  ds_size=None, print_errors=False, min_size=30,
                  delete_bad_files=False, equalise=False, augment=False):
@@ -16,22 +22,15 @@ class FastDataset(Dataset):
         for root, _, files in os.walk(dir):
             for f in files:
                 all_paths.append(os.path.join(root, f))
-
-        # Shuffle and limit number of files if specified
         shuffle(all_paths)
-        if ds_size is not None and ds_size < 1:
-                ds_size = int(ds_size*len(all_paths))
 
         print('Reading' if processor is None else 'Reading and processing',
-            f'{ds_size} files from {dir}...')
-
-        # Load entries into dataframe in memory - faster than reading each file
-        # every time we need to access it
+            f'{ds_size} files from {dir} into memory...')
         self.dataframe = []
 
         pbar = tqdm(total=ds_size, position=0, leave=False)
 
-        # Discover classes
+        # Discover classes and init eq requirements
         classes = []
         for path in all_paths:
             filename = os.path.basename(path)
@@ -42,7 +41,6 @@ class FastDataset(Dataset):
             if label is not None:
                 if label not in classes:
                     classes.append(label)
-        # init eq requirements
         class_goal = ds_size//len(classes)
         class_count = {}
         aug_count = {}
@@ -98,7 +96,6 @@ class FastDataset(Dataset):
                         transforms.RandomGrayscale(p=0.3),
                         transform,
                     ])
-                    print(5)
                     image = aug_transform(image)
                     aug_count[str(label)] += 1
                 else:
@@ -129,10 +126,148 @@ class FastDataset(Dataset):
     def __getitem__(self, index):
         entry = self.dataframe[index]
         return entry['image'], entry['label']
+    
 
+class StorageDataset(Dataset):
+    # Saves processed images to disk, loads each time they are requested
+    # Slightly slower than MemoryDataset, but allows for larger datasets
 
+    def __init__(self, dir, label_func, transform, processor=None,
+                 ds_size=None, print_errors=False, min_size=30,
+                 delete_bad_files=False, equalise=False, augment=False):
+        # Create new dir for processed images
+        if dir[-1] == '/': dir = dir[:-1]
+        self.write_dir = dir + '_processed'
+        if not os.path.exists(self.write_dir):
+            os.makedirs(self.write_dir)
+
+        og_paths = []
+        for root, _, files in os.walk(dir):
+            for f in files:
+                og_paths.append(os.path.join(root, f))
+        shuffle(og_paths)
+
+        print('Reading' if processor is None else 'Reading and processing',
+            f'{ds_size} files from {dir} into `{self.write_dir}`...')
+        self.dataframe = []
+
+        pbar = tqdm(total=ds_size, position=0, leave=False)
+
+        # Discover classes and init eq requirements
+        classes = []
+        for path in og_paths:
+            filename = os.path.basename(path)
+            try:
+                label = label_func(filename)
+            except Exception:
+                continue
+            if label is not None:
+                if label not in classes:
+                    classes.append(label)
+        class_goal = ds_size//len(classes)
+        class_count = {}
+        aug_count = {}
+        for c in classes:
+            class_count[str(c)] = 0
+            aug_count[str(c)] = 0
+        del classes
+        if equalise:
+            print(f'Equalising - {class_goal} entries per class')
+
+        path_idx = 0
+        cycles = 0
+
+        while len(self.dataframe) < ds_size:
+            if path_idx >= len(og_paths):
+                path_idx = 0
+                cycles += 1
+            path = og_paths[path_idx]
+            path_idx += 1
+            
+            filename = os.path.basename(path)
+
+            # Get image class label from filename
+            try:
+                label = label_func(filename)
+            except Exception:
+                continue
+
+            if label is None:
+                if print_errors: print(f'Skipping {filename}:',
+                                    'label function returned None')
+                if delete_bad_files: os.remove(path)
+                continue
+
+            elif equalise and class_count[str(label)] > class_goal:
+                continue # Skip if we have enough of this class
+
+            try:
+                image = cv.imread(path)
+                if processor:
+                    face_images, _ = processor(image)
+                    image = face_images[0] # [0] is most prevalent face in image (usually only one)
+
+                image = Image.fromarray(image) # transform expects PIL image
+                if augment is True and cycles > 0:
+                    # Randomly apply various augmentations to bolster dataset
+                    aug_transform = transforms.Compose([
+                        transforms.RandomHorizontalFlip(),
+                        transforms.RandomAdjustSharpness(sharpness_factor=randint(0,10)),
+                        transforms.GaussianBlur(randint(0, 10)*2+1),
+                        transforms.RandomRotation(randint(0,10), fill=255),
+                        transforms.RandomPerspective(distortion_scale=0.2, fill=255),
+                        transforms.RandomGrayscale(p=0.3),
+                        transform,
+                    ])
+                    image = aug_transform(image)
+                    aug_count[str(label)] += 1
+                else:
+                    image = transform(image)
+
+                try:
+                    # Save processed image tensor to disk
+                    torch.save(image, f'{self.write_dir}/{filename}.tensor')
+                except Exception as e:
+                    print(f'Error saving {filename}: {e}')
+                    continue
+
+                entry = {'filename': filename, 'label': label}
+                self.dataframe.append(entry)
+
+                class_count[str(label)] += 1
+                pbar.update(1)
+                    
+            except Exception as e:
+                if print_errors: print(f'Skipping file {filename}: {e}')
+                if delete_bad_files: os.remove(path)
+                continue
+
+        print(f'\n{len(self.dataframe)} items successfully prepared')
+        if print_errors:
+            if equalise:
+                print(f'Equalised datset to {class_goal} images per class')
+            print(f'Final class counts: {class_count}')
+        
+        print() # newline
+        
+    def __len__(self):
+        return len(self.dataframe)
+
+    def __getitem__(self, index):
+        entry = self.dataframe[index]
+        # Load the image tensor saved earlier
+        filename = entry['filename'] + '.tensor'
+        image = torch.load(f'{self.write_dir}/{filename}')
+        return image, entry['label']
+
+    def delete(self):
+        # Delete processed images from disk
+        shutil.rmtree(self.write_dir)
+
+# redundant, remove this later
 class SlowDataset(Dataset):
-    # Loads images from disk every time they are requested
+    # Saves processed images to disk, loads each time they are requested
+    # Slightly slower than MemoryDataset, but allows for larger datasets
     def __init__(self, dir, label_func, transform, processor=None,
                  print_errors=False, min_size=30, ds_size=None,
                  delete_bad_files=False, equalise=False, classes=None,

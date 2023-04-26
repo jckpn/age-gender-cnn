@@ -91,6 +91,8 @@ def processor(crop='face'):
                         'left_eye_y': coords[5],
                         'right_eye_x': coords[6],
                         'right_eye_y': coords[7]}
+            
+            if this_coords['face_w'] < 28: continue # Skip face if too small/blurry
 
             aligned_img = eye_align(input_img, this_coords, w, h, eye_x_frac, eye_y_frac)
             aligned_eq = equalise(aligned_img)
@@ -105,7 +107,7 @@ def processor(crop='face'):
 
 if __name__ == '__main__':
     # Test preprocessor
-    input_img = cv.imread('../../../archive/group.jpg')
+    input_img = cv.imread('./example_images/festival.jpg')
 
     face_images, face_coords = processor()(input_img)
 
