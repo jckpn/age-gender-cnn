@@ -9,6 +9,7 @@ from tqdm import tqdm
 def print_training_status(epoch_count, images_seen, train_loss, val_loss,
                           elapsed_time, patience_count):
     print(
+        f"\033[F", # https://stackoverflow.com/a/53377938
         # https://stackoverflow.com/a/8885688
         f"| {'*' * patience_count:10}{epoch_count:3.0f}",
         f"| {images_seen:13}",
@@ -71,8 +72,11 @@ TRAINING MODEL {model_save_name} WITH PARAMS:
                     images, labels = images.to('cuda'), labels.to('cuda')
                 optim.zero_grad()
                 outputs = model(images)  # Forward pass
-                loss = loss_fn(outputs, labels) if isinstance(loss_fn, nn.CrossEntropyLoss) \
-                    else loss_fn(outputs, labels.float()) / batch_size
+                loss = (
+                    loss_fn(outputs, labels) if isinstance(loss_fn, nn.CrossEntropyLoss)
+                    # For MSELoss, need to unsqueeze labels to match outputs
+                    # and divide by batch size to get reasonable loss values
+                    else loss_fn(outputs, labels.float().unsqueeze(1)) / batch_size)
                 loss.backward()
                 optim.step()
                 train_loss += loss.item()
@@ -87,8 +91,9 @@ TRAINING MODEL {model_save_name} WITH PARAMS:
                 if torch.cuda.is_available(): # can this be done to whole dataset instead?
                     images, labels = images.to('cuda'), labels.to('cuda')
                 outputs = model(images)
-                loss = loss_fn(outputs, labels) if isinstance(loss_fn, nn.CrossEntropyLoss) \
-                    else loss_fn(outputs, labels.float()) / batch_size
+                loss = (
+                    loss_fn(outputs, labels) if isinstance(loss_fn, nn.CrossEntropyLoss)
+                    else loss_fn(outputs, labels.float().unsqueeze(1)) / batch_size)
                 val_loss += loss.item()
             val_loss /= len(val_dataloader)  # Average loss over batch
 

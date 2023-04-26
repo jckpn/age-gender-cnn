@@ -174,11 +174,11 @@ if __name__ == '__main__':
 
     # load models
     # todo: make this accessible via cmd
-    g_path = '../models\LeNet-2_2504-1625.pt'
+    g_path = './models/LeNet-2_2504-1625.pt'
     g_processor = preprocessor.processor(w=50, h=50)
     g_transform = lenet_transform(size=50)
 
-    a_path = '../models\LeNet-1_2504-1633.pt'
+    a_path = './models/LeNet-1_2504-1633.pt'
     a_processor = preprocessor.processor(w=50, h=50)
     a_transform = lenet_transform(size=50)
 
