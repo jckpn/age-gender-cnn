@@ -11,7 +11,7 @@ from random import randint
 class FastDataset(Dataset):
     def __init__(self, dir, label_func, transform, processor=None,
                  ds_size=None, print_errors=False, min_size=30,
-                 delete_bad_files=False, equalise=False, classes=None, augment=False):
+                 delete_bad_files=False, equalise=False, augment=False):
         all_paths = []
         for root, _, files in os.walk(dir):
             for f in files:
@@ -31,14 +31,27 @@ class FastDataset(Dataset):
 
         pbar = tqdm(total=ds_size, position=0, leave=False)
 
+        # Discover classes
+        classes = []
+        for path in all_paths:
+            filename = os.path.basename(path)
+            try:
+                label = label_func(filename)
+            except Exception:
+                continue
+            if label is not None:
+                if label not in classes:
+                    classes.append(label)
         # init eq requirements
-        class_goal = ds_size//classes
-        eq_requirements = []
-        if equalise and classes is not None:
-            for i in range(classes):
-                requirement = {'class': i, 'count': 0, 'aug_count': 0}
-                eq_requirements.append(requirement)
-            print(f'Equalising to {class_goal} entries per class...')
+        class_goal = ds_size//len(classes)
+        class_count = {}
+        aug_count = {}
+        for c in classes:
+            class_count[str(c)] = 0
+            aug_count[str(c)] = 0
+        del classes
+        if equalise:
+            print(f'Equalising - {class_goal} entries per class')
 
         path_idx = 0
         cycles = 0
@@ -63,7 +76,8 @@ class FastDataset(Dataset):
                                     'label function returned None')
                 if delete_bad_files: os.remove(path)
                 continue
-            elif equalise and eq_requirements[label]['count'] > class_goal:
+
+            elif equalise and class_count[str(label)] > class_goal:
                 continue # Skip if we have enough of this class
 
             try:
@@ -84,14 +98,16 @@ class FastDataset(Dataset):
                         transforms.RandomGrayscale(p=0.3),
                         transform,
                     ])
+                    print(5)
                     image = aug_transform(image)
-                    eq_requirements[label]['aug_count'] += 1
+                    aug_count[str(label)] += 1
                 else:
                     image = transform(image)
 
                 entry = {'image': image, 'label': label}
                 self.dataframe.append(entry)
-                if equalise: eq_requirements[label]['count'] += 1
+
+                class_count[str(label)] += 1
                 pbar.update(1)
                     
             except Exception as e:
@@ -103,7 +119,7 @@ class FastDataset(Dataset):
         if print_errors:
             if equalise:
                 print(f'Equalised datset to {class_goal} images per class')
-            print(f'Final class counts: {eq_requirements}')
+            print(f'Final class counts: {class_count}')
         
         print() # newline
         
@@ -145,12 +161,22 @@ class SlowDataset(Dataset):
 
         print('Found and shuffled',
             f'{len(self.all_paths)} files from {dir}...')
-        
-        self.eq_requirements = []
-        for i in range(classes):
-            requirement = {'class': i, 'count': 0}
-            self.eq_requirements.append(requirement)
-        self.class_goal = ds_size//classes
+        # Discover classes
+        classes = []
+        for path in self.all_paths:
+            filename = os.path.basename(path)
+            label = label_func(filename)
+            if label is not None:
+                classes.append(label)
+        # init eq requirements
+        class_goal = ds_size//len(classes)
+        eq_requirements = []
+        for c in classes:
+            requirement = {'class': str(c), 'count': 0, 'aug_count': 0}
+            eq_requirements.append(requirement)
+        del classes
+        if equalise:
+            print(f'Equalising - {class_goal} entries per class')
         
         print() # newline
 
@@ -171,7 +197,8 @@ class SlowDataset(Dataset):
                                     'label function returned None')
                 if self.delete_bad_files: os.remove(path)
                 return self.__getitem__(index+1)
-            elif self.equalise and self.eq_requirements[label]['count'] > self.class_goal:
+            
+            elif self.equalise and self.eq_requirements[str(label)]['count'] > self.class_goal:
                 return self.__getitem__(index+1) # skip if we have enough of this class
 
             image = cv.imread(path)

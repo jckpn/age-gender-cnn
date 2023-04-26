@@ -37,7 +37,7 @@ def mae(net, test_dataset, print_results=False):
             tests += 1
             mae += abs(label - pred)
     mae /= tests
-    if print_results: print(f'MAE: {mae:.2f}')
+    if print_results: print(f'MAE: {mae:.4g}')
     return mae
 
 
