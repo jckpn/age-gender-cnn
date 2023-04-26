@@ -59,7 +59,15 @@ def equalise(input_img):
     img_eq = cv.merge((r_eq, g_eq, b_eq))
     return img_eq
 
-def processor(eye_x_frac=0.37, eye_y_frac=0.47, w=224, h=224):
+def processor(crop='face'):
+    w, h = 224, 224 # largest image size possibly required - ensure processor doesn't  bottleneck
+    if crop=='face':
+        eye_x_frac=0.28
+        eye_y_frac=0.37
+    elif crop=='head':
+        eye_x_frac=0.37
+        eye_y_frac=0.48
+
     # Create processor function based on given alignment params
     def run(input_img):
         # Run face detector
