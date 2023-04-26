@@ -1,12 +1,12 @@
 # 📖 Predicting Age and Gender From Facial Images With Deep Neural Networks
 
-## ❓ What is this?
+## What is this?
 
 This repository contains the source code and runnable GUI for a CNN-based facial feature extractor, which predicts the gender and age of subjects from images or live video. This project was undertaken as my chosen Final Year Project (22COZ250) at Loughborough University.
 
 For more details on the project's development, as well as an in-depth review of the current state of automatic facial feature classifiers, see the `report.pdf`.
 
-*Children as young as three are intrinsically capable of recognising these traits by glancing at a person's face, yet encoding this ability into a mathematical model or computer program has remained a difficult challenge for many decades. However, recent advances in machine learning and the advent of convolutional neural networks have allowed researchers to replicate similar perceptive skills on computers to a remarkable degree.*
+*Children as young as three are intrinsically capable of recognising these traits by glancing at a person's face, yet encoding this ability into a mathematical model or computer program has remained a difficult challenge for many decades. However, recent advances in machine learning and the advent of convolutional neural networks have allowed researchers to replicate similar perceptive skills on computers to a remarkable degree.* (from abstract)
 
 
 ## ⚙️ Installation
@@ -31,7 +31,16 @@ Download the OpenCV face detection model from [here](https://github.com/opencv/o
 
 
 ## 💻 Use
-To test the models on an image, you can run:
+
+Activate the conda environment you cloned earlier:
+
+```sh
+conda activate fyp
+```
+
+### Run with image
+
+To test the model on a specified image, you can run:
 
 ```sh
 python3 visualise.py --image-path path/to/image
@@ -39,14 +48,19 @@ python3 visualise.py --image-path path/to/image
 
 You can use an image of your own, or use one of the example images from `examples`.
 
-To use the models with live video, use:
+### Run with webcam
+
+To test the model with live video, run visualise.py without the --image-path argument:
 
 ```sh
-python3 visualise.py --camera
+python3 visualise.py
 ```
 
 This will run the model in real-time using the first detected webcam as a live input.
 
+### Additional arguments
+
+You can use `--show-processed` to see the pre-processed facial images alongside the model output.
 
 ## 🤖 Training your own models
 
