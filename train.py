@@ -6,7 +6,6 @@ import torch
 import os
 from tqdm import tqdm
 
-
 def print_training_status(epoch_count, images_seen, train_loss, val_loss,
                           elapsed_time, patience_count):
     print(
@@ -102,6 +101,7 @@ TRAINING MODEL {model_save_name} WITH PARAMS:
                 # Otherwise (i.e. if getting worse), load best model and try again
                 model.load_state_dict(torch.load(model_save_path))
                 # Reset optimiser momentum to encourage new exploration:
+                learning_rate *= 0.5 # Reduce learning rate
                 optim = optim_fn(model.parameters(), lr=learning_rate)
                 patience_count += 1 # Increase patience count
                 

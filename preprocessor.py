@@ -59,7 +59,7 @@ def equalise(input_img):
     img_eq = cv.merge((r_eq, g_eq, b_eq))
     return img_eq
 
-def processor(eye_x_frac=0.28, eye_y_frac=0.38, w=224, h=224):
+def processor(eye_x_frac=0.37, eye_y_frac=0.47, w=224, h=224):
     # Create processor function based on given alignment params
     def run(input_img):
         # Run face detector
