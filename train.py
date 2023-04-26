@@ -8,10 +8,10 @@ from tqdm import tqdm
 
 
 def print_training_status(epoch_count, images_seen, train_loss, val_loss,
-                          elapsed_time):
+                          elapsed_time, patience_count):
     print(
         # https://stackoverflow.com/a/8885688
-        f"| {epoch_count:13.0f}",
+        f"| {'*' * patience_count:10}{epoch_count:3.0f}",
         f"| {images_seen:13}",
         f"| {train_loss:13.3f}",
         f"| {val_loss:13.3f}",
@@ -32,10 +32,9 @@ def train_model(model, train_set, val_set, model_save_dir='./models/',
                        + ((filename_note + '_') if filename_note else '_')
                        + strftime("%d%m-%H%M") + '.pt')
     model_save_path = os.path.join(model_save_dir, model_save_name)
-    optimizer = optim_fn(model.parameters(), learning_rate)
+    optim = optim_fn(model.parameters(), lr=learning_rate)
     images_seen = 0
     best_val_loss = None
-    last_val_loss = None
     patience_count = 0
     halt_reason = None
 
@@ -50,7 +49,7 @@ def train_model(model, train_set, val_set, model_save_dir='./models/',
 TRAINING MODEL {model_save_name} WITH PARAMS:
  - Architecture: {model.__class__.__name__}
  - Learning rate: {learning_rate}
- - Optimizer: {optimizer.__class__.__name__}
+ - Optimizer: {optim.__class__.__name__}
  - Loss function: {loss_fn}
  - Other notes: {filename_note if filename_note else 'None'}
 
@@ -71,12 +70,12 @@ TRAINING MODEL {model_save_name} WITH PARAMS:
                                     desc=f'Epoch {epoch_count}') :  # iterate through batches
                 if torch.cuda.is_available(): # can this be done to whole dataset instead?
                     images, labels = images.to('cuda'), labels.to('cuda')
-                optimizer.zero_grad()
+                optim.zero_grad()
                 outputs = model(images)  # Forward pass
                 loss = loss_fn(outputs, labels) if isinstance(loss_fn, nn.CrossEntropyLoss) \
                     else loss_fn(outputs, labels.float()) / batch_size
                 loss.backward()
-                optimizer.step()
+                optim.step()
                 train_loss += loss.item()
                 images_seen += len(images)
             train_loss /= len(train_dataloader)  # Average loss over batch
@@ -93,23 +92,23 @@ TRAINING MODEL {model_save_name} WITH PARAMS:
                     else loss_fn(outputs, labels.float()) / batch_size
                 val_loss += loss.item()
             val_loss /= len(val_dataloader)  # Average loss over batch
+
             if best_val_loss is None or val_loss < best_val_loss:
+                # Save model if best so far
                 torch.save(model.state_dict(), model_save_path)
                 best_val_loss = val_loss
-            
-            if last_val_loss and val_loss > last_val_loss:
-                patience_count += 1
-            else:
-                # Can load best model to start again, or keep going in case it
-                # starts improving again (uncomment):
-                # model.load_state_dict(torch.load(model_save_path))
                 patience_count = 0
-            last_val_loss = val_loss
-
+            elif val_loss > best_val_loss:
+                # Otherwise (i.e. if getting worse), load best model and try again
+                model.load_state_dict(torch.load(model_save_path))
+                # Reset optimiser momentum to encourage new exploration:
+                optim = optim_fn(model.parameters(), lr=learning_rate)
+                patience_count += 1 # Increase patience count
+                
             # Display epoch results
             elapsed_time = time() - start_time
             print_training_status(epoch_count, images_seen, train_loss,
-                                val_loss, elapsed_time)
+                                val_loss, elapsed_time, patience_count)
 
             # Stop training if val loss hasn't improved for a while
             if patience_count >= patience:

@@ -72,8 +72,6 @@ class FastDataset(Dataset):
                     face_images, _ = processor(image)
                     image = face_images[0] # [0] is most prevalent face in image (usually only one)
 
-                    # image = Image.fromarray(image) # transform expects PIL image
-
                 image = Image.fromarray(image) # transform expects PIL image
                 if augment is True and cycles > 0:
                     # Randomly apply various augmentations to bolster dataset
@@ -93,7 +91,7 @@ class FastDataset(Dataset):
 
                 entry = {'image': image, 'label': label}
                 self.dataframe.append(entry)
-                eq_requirements[label]['count'] += 1
+                if equalise: eq_requirements[label]['count'] += 1
                 pbar.update(1)
                     
             except Exception as e:

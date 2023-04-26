@@ -13,7 +13,6 @@ def class_accuracy(net, test_dataset, print_results=False):
     for images, labels in tqdm(test_dataloader, position=0, leave=False):
         images, labels = images.to(device), labels.to(device) # Move to device
         for idx, image in enumerate(images):
-            image = image.unsqueeze(0)
             label = labels[idx].item()
             pred = net.predict(image)
             tests += 1
@@ -33,7 +32,6 @@ def mae(net, test_dataset, print_results=False):
     for images, labels in tqdm(test_dataloader, position=0, leave=False):
         images, labels = images.to(device), labels.to(device) # Move to device
         for idx, image in enumerate(images):
-            image = image.unsqueeze(0)
             label = labels[idx].item()
             pred = net.predict(image)
             tests += 1
