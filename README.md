@@ -27,12 +27,18 @@ Clone the conda environment and install relevant packages:
 conda env create -f environment.yml
 ```
 
-Download the OpenCV face detection model from [here](https://github.com/opencv/opencv_zoo/blob/master/models/face_detection_yunet/face_detection_yunet_2022mar.onnx?raw=true) and place it in the `age-gender-cnn` installation folder. (This file cannot be included due to copyright)
+Alternatively, install the packages via pip:
+
+```sh
+torch torchvisioncopencv-python ipykernel tqdm
+```
+
+Next, download the OpenCV face detection model from [here](https://github.com/opencv/opencv_zoo/blob/master/models/face_detection_yunet/face_detection_yunet_2022mar.onnx?raw=true) and place it in the `age-gender-cnn` installation folder. This file cannot be included in this repo due to copyright.
 
 
 ## 💻 Use
 
-Activate the conda environment you cloned earlier:
+Activate the conda environment you cloned earlier (if you used conda):
 
 ```sh
 conda activate fyp
@@ -43,7 +49,7 @@ conda activate fyp
 To test the model on a specified image, you can run:
 
 ```sh
-python3 visualise.py --image-path path/to/image
+py visualise.py --image-path path/to/image
 ```
 
 You can use an image of your own, or use one of the example images from `examples`.
@@ -53,7 +59,7 @@ You can use an image of your own, or use one of the example images from `example
 To test the model with live video, run visualise.py without the --image-path argument:
 
 ```sh
-python3 visualise.py
+py visualise.py
 ```
 
 This will run the model in real-time using the first detected webcam as a live input.
