@@ -59,14 +59,17 @@ def equalise(input_img):
     img_eq = cv.merge((r_eq, g_eq, b_eq))
     return img_eq
 
-def processor(crop='face'):
-    w, h = 224, 224 # largest image size possibly required - ensure processor doesn't  bottleneck
+def process(crop='face', size=84):
+    w, h = size, size
     if crop=='face':
-        eye_x_frac=0.28
-        eye_y_frac=0.37
+        eye_x_frac=0.30
+        eye_y_frac=0.35
     elif crop=='head':
         eye_x_frac=0.37
         eye_y_frac=0.48
+    elif crop=='mid':
+        eye_x_frac=0.34
+        eye_y_frac=0.42
 
     # Create processor function based on given alignment params
     def run(input_img):
@@ -109,7 +112,7 @@ if __name__ == '__main__':
     # Test preprocessor
     input_img = cv.imread('./example_images/festival.jpg')
 
-    face_images, face_coords = processor()(input_img)
+    face_images, face_coords = process(crop='mid')(input_img)
 
     for entry in face_coords:
         

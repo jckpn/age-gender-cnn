@@ -126,24 +126,24 @@ class VGG16(nn.Module):
 # Attention inspired by ...
 # Analyses chosen patches from grid as well as whole image
 class GridAttentionNet(nn.Module):
-    def __init__(self, num_outputs, analysis_model, attention_model,
+    def __init__(self, num_classes, analysis_model, attention_model,
                  grid_size=4, num_patches=2):
         super().__init__()
 
-        self.num_outputs = num_outputs
+        self.num_classes = num_classes
         self.grid_size = grid_size
         self.num_patches = num_patches
 
         patch_output = 32
 
-        self.attention_net = attention_model(num_outputs=grid_size**2)
-        self.fullimg_analysis_net = analysis_model(num_outputs=patch_output)
-        self.patch_analysis_net = analysis_model(num_outputs=patch_output)
-        self.final_classifier = nn.Linear(in_features=(self.num_patches + 1)*patch_output, out_features=num_outputs)
+        self.attention_net = attention_model(num_classes=grid_size**2)
+        self.fullimg_analysis_net = analysis_model(num_classes=patch_output)
+        self.patch_analysis_net = analysis_model(num_classes=patch_output)
+        self.final_classifier = nn.Linear(in_features=(self.num_patches + 1)*patch_output, out_features=num_classes)
 
         # Final classification network:
         total_CNNs = num_patches + 1
-        self.final_classifier = nn.Linear(total_CNNs*patch_output, self.num_outputs)
+        self.final_classifier = nn.Linear(total_CNNs*patch_output, self.num_classes)
     
     def forward_single(self, input):
             input = input.unsqueeze(0) # 1x batch
@@ -209,19 +209,19 @@ class GridAttentionNet(nn.Module):
 
 # Analyses chosen patches of any size from grid
 class VariableAttentionNet(nn.Module):
-    def __init__(self, num_outputs, attention_model, analysis_model, num_patches=2):
+    def __init__(self, num_classes, attention_model, analysis_model, num_patches=2):
         super(VariableAttentionNet, self).__init__()
 
-        self.num_outputs = num_outputs
+        self.num_classes = num_classes
         self.num_patches = num_patches
 
         patch_output = 50
 
-        self.attention_net = nn.Sequential(attention_model(num_outputs=num_patches*4),
+        self.attention_net = nn.Sequential(attention_model(num_classes=num_patches*4),
                                            nn.Sigmoid()) # Need output to be 0-1
-        self.fullimg_analysis_net = analysis_model(num_outputs=patch_output)
-        self.patch_analysis_net = analysis_model(num_outputs=patch_output)
-        self.final_classifier = nn.Linear(num_patches*patch_output, self.num_outputs)
+        self.fullimg_analysis_net = analysis_model(num_classes=patch_output)
+        self.patch_analysis_net = analysis_model(num_classes=patch_output)
+        self.final_classifier = nn.Linear(num_patches*patch_output, self.num_classes)
     
     def forward_single(self, input):
             input = input.unsqueeze(0) # 1x batch

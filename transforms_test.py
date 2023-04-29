@@ -15,7 +15,7 @@ images = []
 
 for i in range(10):
     image = cv.imread('C:/Users/jckpn/Downloads/14837124.JPG')
-    image, _ = preprocessor.run(image)
+    image, _ = preprocessor.process()(image)
     image = image[0]
     image = cv.cvtColor(image, cv.COLOR_RGB2BGR)
     image = Image.fromarray(image) # transform expects PIL image

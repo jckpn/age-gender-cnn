@@ -1,10 +1,12 @@
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 import torch
+import numpy as np
+from torchvision import transforms
 
 
-def class_accuracy(net, test_dataset, print_results=False):
-    if print_results: print('Testing model accuracy...')
+def class_accuracy(net, test_dataset, image_resize=224):
+    print('Testing class accuracy...')
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     test_dataloader = DataLoader(test_dataset, batch_size=1, shuffle=True)
     net.eval()
@@ -12,46 +14,60 @@ def class_accuracy(net, test_dataset, print_results=False):
     tests = 0
     for images, labels in tqdm(test_dataloader, position=0, leave=False):
         images, labels = images.to(device), labels.to(device) # Move to device
-        for idx, image in enumerate(images):
-            label = labels[idx].item()
-            pred = net.predict(image)
-            tests += 1
-            if pred == label:
-                acc += 1
+        if image_resize is not None:
+            images = transforms.Resize(image_resize)(images)
+        image, label = images[0], labels[0].item()
+        pred = net.predict(image)
+        tests += 1
+        if pred == label:
+            acc += 1
     acc /= tests
-    if print_results: print(f'Accuracy: {acc*100:.2f}%')
-    return acc
+    print(f'Accuracy: {acc*100:.2f}%')
 
-def mae(net, test_dataset, print_results=False):
-    if print_results: print('Testing model accuracy...')
+
+def mae(net, test_dataset, image_resize=224):
+    print('Testing MAE...')
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    test_dataloader = DataLoader(test_dataset, batch_size=1, shuffle=True)
+    test_dataloader = DataLoader(test_dataset, batch_size=1)
     net.eval()
     mae = 0
     tests = 0
     for images, labels in tqdm(test_dataloader, position=0, leave=False):
         images, labels = images.to(device), labels.to(device) # Move to device
-        for idx, image in enumerate(images):
-            label = labels[idx].item()
-            pred = net.predict(image)
-            tests += 1
-            mae += abs(label - pred)
+        if image_resize is not None:
+            images = transforms.Resize(image_resize)(images)
+        image, label = images[0], labels[0].item()
+        pred = net.predict(image)
+        tests += 1
+        mae += abs(label - pred)
     mae /= tests
-    if print_results: print(f'MAE: {mae:.4g}')
-    return mae
+    print(f'MAE: {mae:.4g}')
 
 
-def autoencoder(autoencoder, test_dataset, images_to_show=5):
-    test_dataloader = DataLoader(test_dataset, batch_size=images_to_show, shuffle=True)
-    images, _ = test_dataloader.__iter__().__next__()
-    input_images = []
-    output_images = []
+def confusion_matrix(net, test_dataset, num_classes=2, image_resize=224):
+    print('Testing class accuracy...')
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    test_dataloader = DataLoader(test_dataset, batch_size=1)
+    net.eval()
+    confusion = np.zeros((num_classes, num_classes))
+    for images, labels in tqdm(test_dataloader, position=0, leave=False):
+        images, labels = images.to(device), labels.to(device) # Move to device
+        if image_resize is not None:
+            images = transforms.Resize(image_resize)(images)
+        image, label = images[0], labels[0].item()
+        pred = net.predict(image)
+        confusion[label][pred] += 1
 
-    for image in images:
-        input_images.append(image)
-        image = image.unsqueeze(0)
-        output = autoencoder.all(image)
+    print('\nConfusion matrix (col: pred, row: actual/label):')
+    for i in range(num_classes):
+        print(f'{i:11}', end='')
+    print('')
+    for i in range(num_classes):
+        print(f'{i}    ', end='')
+        for j in range(num_classes):
+            print(f'[{confusion[i][j]:9.0f}]', end='')
+        print('')
 
-        output_images.append(output[0])
-    
-    print(input_images, output_images)
+    print('\nAccuracy per class:')
+    for i in range(num_classes):
+        print(f'Class {i}: {confusion[i][i]/confusion[i].sum()*100:.2f}%')

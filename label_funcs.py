@@ -12,17 +12,24 @@ def binary_gender_label(filename):
 
 def age_label_male(filename):
     if binary_gender_label(filename) != 1: return None
-    label = int(filename.split('_')[1])/100
+    label = int(filename.split('_')[1])
     return label
 
 def age_label_female(filename):
     if binary_gender_label(filename) != 0: return None
-    label = int(filename.split('_')[1])/100
+    label = int(filename.split('_')[1])
     return label
 
 def age_label_all(filename):
-    label = int(filename.split('_')[1])/100
+    label = int(filename.split('_')[1])
     return label
+
+def class_age_label(num_classes):
+    class_size = 100/num_classes
+    def f(filename):
+        label = int(filename.split('_')[1])//class_size
+        return int(label)
+    return f
 
 # def age_float_label(filename):
 #     # Infer age from filename
@@ -54,14 +61,14 @@ def utkface_gender_label(filename):
 
 def age_label_male_utk(filename):
     if utkface_gender_label(filename) != 1: return None
-    label = int(filename.split('_')[0])/100
+    label = int(filename.split('_')[0])
     return label
 
 def age_label_female_utk(filename):
     if binary_gender_label(filename) != 0: return None
-    label = int(filename.split('_')[0])/100
+    label = int(filename.split('_')[0])
     return label
 
 def age_label_all_utk(filename):
-    label = int(filename.split('_')[0])/100
+    label = int(filename.split('_')[0])
     return label

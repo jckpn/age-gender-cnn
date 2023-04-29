@@ -5,6 +5,8 @@ from time import time, strftime
 import torch
 import os
 from tqdm import tqdm
+from torchvision import transforms
+from random import randint
 
 def print_training_status(epoch_count, images_seen, train_loss, val_loss,
                           elapsed_time, patience_count):
@@ -21,8 +23,9 @@ def print_training_status(epoch_count, images_seen, train_loss, val_loss,
 # TRAIN FUNCTION
 def train_model(model, train_set, val_set, model_save_dir='./models/',
                  learning_rate=0.0005, max_epochs=30, patience=3,
-                loss_fn=nn.CrossEntropyLoss(), is_autoencoder=False,
-                optim_fn=torch.optim.Adam, batch_size=32, filename_note=None):
+                loss_fn=nn.CrossEntropyLoss(),
+                optim_fn=torch.optim.Adam, batch_size=32, filename_note=None,
+                image_resize=None, aug_transform=None):
 
     # Init variables
     if not os.path.exists(model_save_dir):
@@ -36,13 +39,14 @@ def train_model(model, train_set, val_set, model_save_dir='./models/',
     best_val_loss = None
     patience_count = 0
     halt_reason = None
+    checkpoint = None
 
     # move model to gpu for speed if available
     if torch.cuda.is_available():
         model.to('cuda')
 
-    train_dataloader = DataLoader(train_set, batch_size, shuffle=True)
-    val_dataloader = DataLoader(val_set, batch_size, shuffle=True)
+    train_loader = DataLoader(train_set, batch_size, shuffle=True)
+    val_loader = DataLoader(val_set, batch_size, shuffle=True)
 
     print(f"""
 TRAINING MODEL {model_save_name} WITH PARAMS:
@@ -65,49 +69,60 @@ TRAINING MODEL {model_save_name} WITH PARAMS:
             # Train model with training set
             model.train()  # Set model to training mode
             train_loss = 0
-            for images, labels in tqdm(train_dataloader, position=0, leave=False,
+            for images, labels in tqdm(train_loader, position=0, leave=False,
                                     desc=f'Epoch {epoch_count}') :  # iterate through batches
                 if torch.cuda.is_available(): # can this be done to whole dataset instead?
                     images, labels = images.to('cuda'), labels.to('cuda')
+
+                if image_resize is not None:
+                    images = transforms.Resize((image_resize, image_resize))(images)
+                if aug_transform is not None:
+                    images = aug_transform(images)
+
                 optim.zero_grad()
                 outputs = model(images)  # Forward pass
+                loss_fn(outputs, labels)
                 loss = (
                     loss_fn(outputs, labels) if isinstance(loss_fn, nn.CrossEntropyLoss)
-                    # For MSELoss, need to unsqueeze labels to match outputs:
-                    else loss_fn(outputs, labels.float().unsqueeze(1)) * 100)
+                    # For MSELoss, need to unsqueeze labels to match outputs
+                    else loss_fn(outputs, labels.float().unsqueeze(1)))
                 loss.backward()
                 optim.step()
                 train_loss += loss.item()
                 images_seen += len(images)
-            train_loss /= len(train_dataloader)  # Average loss over batch
+
+            train_loss /= len(train_loader)
 
             # Test model with separate validation set
             model.eval()  # Set model to evaluation mode
             val_loss = 0
-            for images, labels in tqdm(val_dataloader, position=0, leave=False,
+            for images, labels in tqdm(val_loader, position=0, leave=False,
                                     desc=f'Testing epoch {epoch_count}'):
                 if torch.cuda.is_available(): # can this be done to whole dataset instead?
                     images, labels = images.to('cuda'), labels.to('cuda')
+
+                if image_resize is not None:
+                    images = transforms.Resize((image_resize, image_resize))(images)
+
                 outputs = model(images)
                 loss = (
                     loss_fn(outputs, labels) if isinstance(loss_fn, nn.CrossEntropyLoss)
-                    else loss_fn(outputs, labels.float().unsqueeze(1)) * 100)
+                    else loss_fn(outputs, labels.float().unsqueeze(1)))
                 val_loss += loss.item()
-            val_loss /= len(val_dataloader)  # Average loss over batch
+                
+            val_loss /= len(val_loader)
 
             # print(f'val example: expected {labels[0]}, got {outputs[0]}')
 
             if best_val_loss is None or val_loss < best_val_loss:
                 # Save model if best so far
-                torch.save(model.state_dict(), model_save_path)
                 best_val_loss = val_loss
+                checkpoint = model.state_dict()
+                torch.save(checkpoint, model_save_path)
                 patience_count = 0
-            elif val_loss > best_val_loss:
-                # Otherwise (i.e. if getting worse), load best model and try again
-                model.load_state_dict(torch.load(model_save_path))
+            else:
+                # learning_rate *= 0.5 # Reduce learning rate?
                 # Reset optimiser momentum to encourage new exploration:
-                learning_rate *= 0.5 # Reduce learning rate
-                optim = optim_fn(model.parameters(), lr=learning_rate)
                 patience_count += 1 # Increase patience count
                 
             # Display epoch results
@@ -115,10 +130,17 @@ TRAINING MODEL {model_save_name} WITH PARAMS:
             print_training_status(epoch_count, images_seen, train_loss,
                                 val_loss, elapsed_time, patience_count)
 
-            # Stop training if val loss hasn't improved for a while
             if patience_count >= patience:
+                # Stop training if val loss hasn't improved for a while
+                model.load_state_dict(checkpoint)
                 halt_reason = 'patience'
                 break
+
+                # Or warm restart: load best model (checkpoint) and try again
+                # Ommitted due to time constraints and wasn't working properly :(
+                # model.load_state_dict(checkpoint)
+                # optim = optim_fn(model.parameters(), lr=learning_rate)
+                # patience_count = 0
 
 
     except KeyboardInterrupt:
@@ -137,17 +159,11 @@ TRAINING MODEL {model_save_name} WITH PARAMS:
     # Calculate total training time
     end_time = time()
     training_time_s = end_time - start_time
-
     print(
         f'\nTraining took {training_time_s//60:.0f}m {training_time_s%60:02.0f}s',
         f'({training_time_s//epoch_count}s per epoch)' if epoch_count > 0 else '')
-
-    # Re-load best model from session to reverse overfitting
-    if os.path.exists(model_save_path):
-        print(f"\nBest model from session saved to '{model_save_path}'\n")
-        model.load_state_dict(torch.load(model_save_path))
-    else:
-        print('Model NOT saved - check previous error messages')
+    
+    print(f"\nBest model from session saved to '{model_save_path}'\n")
 
     # Return best model
     return model

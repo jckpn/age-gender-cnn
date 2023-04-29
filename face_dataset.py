@@ -24,6 +24,82 @@ class MemoryDataset(Dataset):
                 all_paths.append(os.path.join(root, f))
         shuffle(all_paths)
 
+        if ds_size is None: ds_size = len(all_paths)
+
+        print('Reading' if processor is None else 'Reading and processing',
+            f'{ds_size} files from {dir} into memory...')
+        self.dataframe = []
+
+        pbar = tqdm(total=ds_size, position=0, leave=False)
+
+        path_idx = 0
+        while len(self.dataframe) < ds_size:
+            if path_idx >= len(all_paths):
+                path_idx = 0
+                cycles += 1
+            path = all_paths[path_idx]
+            path_idx += 1
+            
+            filename = os.path.basename(path)
+
+            # Get image class label from filename
+            try:
+                label = label_func(filename)
+            except Exception:
+                continue
+
+            if label is None:
+                if print_errors: print(f'Skipping {filename}:',
+                                    'label function returned None')
+                if delete_bad_files: os.remove(path)
+                continue
+
+            try:
+                image = cv.imread(path)
+                if processor:
+                    face_images, _ = processor(image)
+                    image = face_images[0] # should only have one face in image
+
+                image = Image.fromarray(image) # transform expects PIL image
+                image = transform(image)
+
+                entry = {'image': image, 'label': label}
+                self.dataframe.append(entry)
+
+                pbar.update(1)
+                    
+            except Exception as e:
+                if print_errors: print(f'Skipping file {filename}: {e}')
+                if delete_bad_files: os.remove(path)
+                continue
+
+        print(f'\n{len(self.dataframe)} items successfully prepared')
+        
+        print() # newline
+        
+    def __len__(self):
+        return len(self.dataframe)
+
+    def __getitem__(self, index):
+        entry = self.dataframe[index]
+        return entry['image'], entry['label']
+    
+
+class EqMemoryDataset(Dataset):
+    # Load entries into dataframe in memory - faster than reading each file
+    # every time we need to access it, but requires enough RAM to store
+
+    def __init__(self, dir, label_func, transform, processor=None,
+                 ds_size=None, print_errors=False, min_size=30,
+                 delete_bad_files=False):
+        all_paths = []
+        for root, _, files in os.walk(dir):
+            for f in files:
+                all_paths.append(os.path.join(root, f))
+        shuffle(all_paths)
+
+        if ds_size is None: ds_size = len(all_paths)
+
         print('Reading' if processor is None else 'Reading and processing',
             f'{ds_size} files from {dir} into memory...')
         self.dataframe = []
@@ -46,10 +122,9 @@ class MemoryDataset(Dataset):
         aug_count = {}
         for c in classes:
             class_count[str(c)] = 0
-            aug_count[str(c)] = 0
         del classes
-        if equalise:
-            print(f'Equalising - {class_goal} entries per class')
+        print(f'Equalising - {class_goal} entries per class',
+                f'({len(class_count)} classes)')
 
         path_idx = 0
         cycles = 0
@@ -74,8 +149,7 @@ class MemoryDataset(Dataset):
                                     'label function returned None')
                 if delete_bad_files: os.remove(path)
                 continue
-
-            elif equalise and class_count[str(label)] > class_goal:
+            elif class_count[str(label)] > class_goal:
                 continue # Skip if we have enough of this class
 
             try:
@@ -85,21 +159,7 @@ class MemoryDataset(Dataset):
                     image = face_images[0] # [0] is most prevalent face in image (usually only one)
 
                 image = Image.fromarray(image) # transform expects PIL image
-                if augment is True and cycles > 0:
-                    # Randomly apply various augmentations to bolster dataset
-                    aug_transform = transforms.Compose([
-                        transforms.RandomHorizontalFlip(),
-                        transforms.RandomAdjustSharpness(sharpness_factor=randint(0,10)),
-                        transforms.GaussianBlur(randint(0, 10)*2+1),
-                        transforms.RandomRotation(randint(0,10), fill=255),
-                        transforms.RandomPerspective(distortion_scale=0.2, fill=255),
-                        transforms.RandomGrayscale(p=0.3),
-                        transform,
-                    ])
-                    image = aug_transform(image)
-                    aug_count[str(label)] += 1
-                else:
-                    image = transform(image)
+                image = transform(image)
 
                 entry = {'image': image, 'label': label}
                 self.dataframe.append(entry)
@@ -113,10 +173,8 @@ class MemoryDataset(Dataset):
                 continue
 
         print(f'\n{len(self.dataframe)} items successfully prepared')
-        if print_errors:
-            if equalise:
-                print(f'Equalised datset to {class_goal} images per class')
-            print(f'Final class counts: {class_count}')
+        print(f'Equalised datset to {class_goal} images per class')
+        print(f'{class_count}')
         
         print() # newline
         
@@ -128,18 +186,13 @@ class MemoryDataset(Dataset):
         return entry['image'], entry['label']
     
 
-class StorageDataset(Dataset):
+class EqStorageDataset(Dataset):
     # Saves processed images to disk, loads each time they are requested
     # Slightly slower than MemoryDataset, but allows for larger datasets
 
     def __init__(self, dir, label_func, transform, processor=None,
                  ds_size=None, print_errors=False, min_size=30,
                  delete_bad_files=False, equalise=False, augment=False):
-        # Create new dir for processed images
-        if dir[-1] == '/': dir = dir[:-1]
-        self.write_dir = dir + '_processed'
-        if not os.path.exists(self.write_dir):
-            os.makedirs(self.write_dir)
 
         og_paths = []
         for root, _, files in os.walk(dir):
@@ -147,9 +200,14 @@ class StorageDataset(Dataset):
                 og_paths.append(os.path.join(root, f))
         shuffle(og_paths)
 
+        if ds_size is None: ds_size = len(og_paths)
+
         print('Reading' if processor is None else 'Reading and processing',
-            f'{ds_size} files from {dir} into `{self.write_dir}`...')
+            f'{ds_size} files from {dir} ...')
         self.dataframe = []
+
+        self.processor = processor
+        self.transform = transform
 
         pbar = tqdm(total=ds_size, position=0, leave=False)
 
@@ -202,36 +260,7 @@ class StorageDataset(Dataset):
                 continue # Skip if we have enough of this class
 
             try:
-                image = cv.imread(path)
-                if processor:
-                    face_images, _ = processor(image)
-                    image = face_images[0] # [0] is most prevalent face in image (usually only one)
-
-                image = Image.fromarray(image) # transform expects PIL image
-                if augment is True and cycles > 0:
-                    # Randomly apply various augmentations to bolster dataset
-                    aug_transform = transforms.Compose([
-                        transforms.RandomHorizontalFlip(),
-                        transforms.RandomAdjustSharpness(sharpness_factor=randint(0,10)),
-                        transforms.GaussianBlur(randint(0, 10)*2+1),
-                        transforms.RandomRotation(randint(0,10), fill=255),
-                        transforms.RandomPerspective(distortion_scale=0.2, fill=255),
-                        transforms.RandomGrayscale(p=0.3),
-                        transform,
-                    ])
-                    image = aug_transform(image)
-                    aug_count[str(label)] += 1
-                else:
-                    image = transform(image)
-
-                try:
-                    # Save processed image tensor to disk
-                    torch.save(image, f'{self.write_dir}/{filename}.tensor')
-                except Exception as e:
-                    print(f'Error saving {filename}: {e}')
-                    continue
-
-                entry = {'filename': filename, 'label': label}
+                entry = {'filename': path, 'label': label}
                 self.dataframe.append(entry)
 
                 class_count[str(label)] += 1
@@ -256,13 +285,22 @@ class StorageDataset(Dataset):
     def __getitem__(self, index):
         entry = self.dataframe[index]
         # Load the image tensor saved earlier
-        filename = entry['filename'] + '.tensor'
-        image = torch.load(f'{self.write_dir}/{filename}')
+        path = entry['filename']
+        
+        try:
+            image = cv.imread(path)
+            if self.processor:
+                face_images, _ = self.processor(image)
+                image = face_images[0] # [0] is most prevalent face in image (usually only one)
+
+            image = Image.fromarray(image) # transform expects PIL image
+            image = self.transform(image)
+                
+        except Exception as e:
+            return self.__getitem__(index+1) # try again
+        
         return image, entry['label']
 
-    def delete(self):
-        # Delete processed images from disk
-        shutil.rmtree(self.write_dir)
 
 # redundant, remove this later
 class SlowDataset(Dataset):

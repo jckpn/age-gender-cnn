@@ -104,7 +104,7 @@ def visualise_image(image_path, g_net, g_processor, g_transform, a_net,
                 face = np.transpose(face, (1,2,0))
             face_min, face_max = face.min(), face.max()
             face = (face - face_min) / (face_max - face_min) * 255
-            face = cv.resize(face, (resize//10, resize//10))
+            face = cv.resize(face, (100, 100)) # resize to avoid clutter
             # convert to rgb if grayscale
             out_image[idx*face.shape[0]:(idx+1)*face.shape[0], 0:face.shape[1]] = face[:,:]
 
@@ -115,13 +115,14 @@ def visualise_image(image_path, g_net, g_processor, g_transform, a_net,
 def visualise_cam(g_net, g_processor, g_transform, a_net, a_processor,
                   a_transform, resize=720, cam_id=0, update_interval=10,
                   show_processed_faces=False, confidence_scores=False,
-                  frame_diff_threshold=0.5):
+                  frame_diff_threshold=1.0):
     cam_input = cv.VideoCapture(cam_id)
     _, frame = cam_input.read() 
     win_title = 'Live (Camera Input)'
     cv.imshow(win_title, frame)
     
     coords, g_preds, a_preds = [], [], []
+    face_images = []
     frame_diff = 0
     last_frame_score = 0
     counter = 0
@@ -133,7 +134,7 @@ def visualise_cam(g_net, g_processor, g_transform, a_net, a_processor,
 
         if counter >= update_interval:
             this_frame_score = np.sum(frame)/frame.size
-            frame_diff = abs(this_frame_score - last_frame_score)**0.5
+            frame_diff = abs(this_frame_score - last_frame_score)
             last_frame_score = this_frame_score
             if frame_diff < frame_diff_threshold:
                 face_images, coords, g_preds = run_model(frame, g_net, g_processor, g_transform)
@@ -174,12 +175,12 @@ if __name__ == '__main__':
 
     # load models
     # todo: make this accessible via cmd
-    g_path = './models/LeNet-2_2504-1625.pt'
-    g_processor = preprocessor.processor(w=50, h=50)
-    g_transform = lenet_transform(size=50)
+    g_path = './models/AlexNet-2_gender_83.pt'
+    g_processor = preprocessor.process(crop='mid')
+    g_transform = alexnet_transform(size=224)
 
     a_path = './models/LeNet-1_2504-1633.pt'
-    a_processor = preprocessor.processor(w=50, h=50)
+    a_processor = preprocessor.process(crop='mid')
     a_transform = lenet_transform(size=50)
 
     # get model classes from path e.g. 'LeNet-2_xyz.pt' -> 'LeNet(2)'
@@ -189,11 +190,13 @@ if __name__ == '__main__':
     g_net.load_state_dict(torch.load(g_path, map_location=torch.device('cpu')))
     g_net.eval()
 
-    a_net = None
-    a_architecture = os.path.basename(a_path).split('_')[0].replace('-', '(') + ')'
-    exec('a_net = ' + a_architecture)
-    a_net.load_state_dict(torch.load(a_path, map_location=torch.device('cpu')))
-    a_net.eval()
+    # a_net = None
+    # a_architecture = os.path.basename(a_path).split('_')[0].replace('-', '(') + ')'
+    # exec('a_net = ' + a_architecture)
+    # a_net.load_state_dict(torch.load(a_path, map_location=torch.device('cpu')))
+    # a_net.eval()
+
+    a_net = BasicCNN(1)
 
     if args.image_path:
         visualise_image(args.image_path,
