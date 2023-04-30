@@ -42,8 +42,8 @@ def train_model(model, train_set, val_set, model_save_dir='./models/',
     checkpoint = None
 
     # move model to gpu for speed if available
-    if torch.cuda.is_available():
-        model.to('cuda')
+    device = 'cpu'#'cuda' if torch.cuda.is_available() else 'cpu'
+    model.to(device)
 
     train_loader = DataLoader(train_set, batch_size, shuffle=True)
     val_loader = DataLoader(val_set, batch_size, shuffle=True)
@@ -71,8 +71,7 @@ TRAINING MODEL {model_save_name} WITH PARAMS:
             train_loss = 0
             for images, labels in tqdm(train_loader, position=0, leave=False,
                                     desc=f'Epoch {epoch_count}') :  # iterate through batches
-                if torch.cuda.is_available(): # can this be done to whole dataset instead?
-                    images, labels = images.to('cuda'), labels.to('cuda')
+                images, labels = images.to(device), labels.to(device)
 
                 if image_resize is not None:
                     images = transforms.Resize((image_resize, image_resize))(images)
@@ -85,7 +84,7 @@ TRAINING MODEL {model_save_name} WITH PARAMS:
                 loss = (
                     loss_fn(outputs, labels) if isinstance(loss_fn, nn.CrossEntropyLoss)
                     # For MSELoss, need to unsqueeze labels to match outputs
-                    else loss_fn(outputs, labels.float().unsqueeze(1)))
+                    else loss_fn(outputs.squeeze(), labels.float()) / batch_size)
                 loss.backward()
                 optim.step()
                 train_loss += loss.item()
@@ -98,8 +97,7 @@ TRAINING MODEL {model_save_name} WITH PARAMS:
             val_loss = 0
             for images, labels in tqdm(val_loader, position=0, leave=False,
                                     desc=f'Testing epoch {epoch_count}'):
-                if torch.cuda.is_available(): # can this be done to whole dataset instead?
-                    images, labels = images.to('cuda'), labels.to('cuda')
+                images, labels = images.to(device), labels.to(device)
 
                 if image_resize is not None:
                     images = transforms.Resize((image_resize, image_resize))(images)
@@ -107,7 +105,7 @@ TRAINING MODEL {model_save_name} WITH PARAMS:
                 outputs = model(images)
                 loss = (
                     loss_fn(outputs, labels) if isinstance(loss_fn, nn.CrossEntropyLoss)
-                    else loss_fn(outputs, labels.float().unsqueeze(1)))
+                    else loss_fn(outputs.squeeze(), labels.float()) / batch_size)
                 val_loss += loss.item()
                 
             val_loss /= len(val_loader)

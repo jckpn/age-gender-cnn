@@ -44,7 +44,7 @@ def mae(net, test_dataset, image_resize=224):
     print(f'MAE: {mae:.4g}')
 
 
-def confusion_matrix(net, test_dataset, num_classes=2, image_resize=224):
+def confusion_matrix(net, test_dataset, num_classes=2, reg_class_size=None, image_resize=224):
     print('Testing class accuracy...')
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     test_dataloader = DataLoader(test_dataset, batch_size=1)
@@ -56,6 +56,9 @@ def confusion_matrix(net, test_dataset, num_classes=2, image_resize=224):
             images = transforms.Resize(image_resize)(images)
         image, label = images[0], labels[0].item()
         pred = net.predict(image)
+        if reg_class_size:
+            label = int(label//reg_class_size)
+            pred = int(pred//reg_class_size)
         confusion[label][pred] += 1
 
     print('\nConfusion matrix (col: pred, row: actual/label):')

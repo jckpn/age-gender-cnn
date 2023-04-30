@@ -36,7 +36,6 @@ class MemoryDataset(Dataset):
         while len(self.dataframe) < ds_size:
             if path_idx >= len(all_paths):
                 path_idx = 0
-                cycles += 1
             path = all_paths[path_idx]
             path_idx += 1
             
@@ -127,12 +126,10 @@ class EqMemoryDataset(Dataset):
                 f'({len(class_count)} classes)')
 
         path_idx = 0
-        cycles = 0
 
         while len(self.dataframe) < ds_size:
             if path_idx >= len(all_paths):
                 path_idx = 0
-                cycles += 1
             path = all_paths[path_idx]
             path_idx += 1
             

@@ -171,6 +171,7 @@ if __name__ == '__main__':
     parser.add_argument('--image-path', type=str)
     parser.add_argument('--show-processed', action='store_true', default=False)
     parser.add_argument('--confidence-scores', action='store_true', default=False)
+    parser.add_argument('--frame-diff-threshold', type=float, default=1.0)
     args = parser.parse_args()
 
     # load models
@@ -208,4 +209,5 @@ if __name__ == '__main__':
         visualise_cam(g_net, g_processor, g_transform,
                       a_net, a_processor, a_transform,
                       show_processed_faces=args.show_processed,
-                      confidence_scores=args.confidence_scores)
+                      confidence_scores=args.confidence_scores,
+                      frame_diff_threshold=args.frame_diff_threshold)

@@ -24,11 +24,11 @@ def age_label_all(filename):
     label = int(filename.split('_')[1])
     return label
 
-def class_age_label(num_classes):
-    class_size = 100/num_classes
+def class_age_label(class_bounds):
     def f(filename):
-        label = int(filename.split('_')[1])//class_size
-        return int(label)
+        for c, class_min in enumerate(class_bounds):
+            if age_label_all(filename) < class_min:
+                return c-1
     return f
 
 # def age_float_label(filename):
