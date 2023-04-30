@@ -6,7 +6,7 @@ from PIL import Image
 
 
 # Init detector
-detector_model_path = os.path.dirname(__file__) + "/face_detection_yunet_2022mar.onnx"
+detector_model_path = os.path.dirname(__file__) + "/models/face_detection_yunet_2022mar.onnx"
 detector = cv.FaceDetectorYN.create(
     model=detector_model_path,
     config="", # Custom config - leave blank

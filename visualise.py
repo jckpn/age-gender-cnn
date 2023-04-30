@@ -1,13 +1,13 @@
 import torch
 import cv2 as cv
 import numpy as np
-import preprocessor
-from networks import *
-from ds_transforms import *
 import os
 from PIL import Image
 import argparse
 from torchvision import transforms
+import src.preprocessor
+from src.networks import *
+from src.ds_transforms import *
 
 
 def run_model(input_img, net, processor, transform):
@@ -176,11 +176,11 @@ if __name__ == '__main__':
 
     # load models
     # todo: make this accessible via cmd
-    g_path = './models/AlexNet-2_gender_83.pt'
+    g_path = './final_models/AlexNet-2_gender_83.pt'
     g_processor = preprocessor.process(crop='mid')
     g_transform = alexnet_transform(size=224)
 
-    a_path = './models/LeNet-1_2504-1633.pt'
+    a_path = './final_models/LeNet-1_2504-1633.pt'
     a_processor = preprocessor.process(crop='mid')
     a_transform = lenet_transform(size=50)
 
