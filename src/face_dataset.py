@@ -85,6 +85,8 @@ class MemoryDataset(Dataset):
     
 
 class EqMemoryDataset(Dataset):
+    # EQUALISED VERSION
+    
     # Load entries into dataframe in memory - faster than reading each file
     # every time we need to access it, but requires enough RAM to store
 
@@ -107,6 +109,7 @@ class EqMemoryDataset(Dataset):
 
         # Discover classes and init eq requirements
         classes = []
+        class_count = {'1': 0}
         for path in all_paths:
             filename = os.path.basename(path)
             try:
@@ -117,17 +120,12 @@ class EqMemoryDataset(Dataset):
                 if label not in classes:
                     classes.append(label)
         class_goal = ds_size//len(classes)
-        class_count = {}
-        aug_count = {}
-        for c in classes:
-            class_count[str(c)] = 0
-        del classes
         print(f'Equalising - {class_goal} entries per class',
-                f'({len(class_count)} classes)')
+                f'({len(classes)} classes)')
 
         path_idx = 0
 
-        while len(self.dataframe) < ds_size:
+        while min(class_count.values()) < class_goal:
             if path_idx >= len(all_paths):
                 path_idx = 0
             path = all_paths[path_idx]
@@ -146,7 +144,7 @@ class EqMemoryDataset(Dataset):
                                     'label function returned None')
                 if delete_bad_files: os.remove(path)
                 continue
-            elif class_count[str(label)] > class_goal:
+            elif str(label) in class_count and class_count[str(label)] >= class_goal:
                 continue # Skip if we have enough of this class
 
             try:
@@ -161,7 +159,11 @@ class EqMemoryDataset(Dataset):
                 entry = {'image': image, 'label': label}
                 self.dataframe.append(entry)
 
-                class_count[str(label)] += 1
+                if str(label) not in class_count:
+                    class_count[str(label)] = 0
+                else:
+                    class_count[str(label)] += 1
+
                 pbar.update(1)
                     
             except Exception as e:
@@ -299,7 +301,7 @@ class EqStorageDataset(Dataset):
         return image, entry['label']
 
 
-# redundant, remove this later
+# old original function
 class SlowDataset(Dataset):
     # Saves processed images to disk, loads each time they are requested
     # Slightly slower than MemoryDataset, but allows for larger datasets

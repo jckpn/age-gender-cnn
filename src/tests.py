@@ -74,3 +74,19 @@ def confusion_matrix(net, test_dataset, num_classes=2, reg_class_size=None, imag
     print('\nAccuracy per class:')
     for i in range(num_classes):
         print(f'Class {i}: {confusion[i][i]/confusion[i].sum()*100:.2f}%')
+
+
+def age_plot(net, test_dataset, image_resize=224):
+    # Used to get plots for age accuracy graph in report
+    
+    print('getting age plot coords...')
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    test_dataloader = DataLoader(test_dataset, batch_size=1, shuffle=True)
+    net.eval()
+    for images, labels in test_dataloader:
+        images, labels = images.to(device), labels.to(device) # Move to device
+        if image_resize is not None:
+            images = transforms.Resize(image_resize)(images)
+        image, label = images[0], labels[0].item()
+        pred = net.predict(image)
+        print(f'({label},{pred:.0f})', end='')

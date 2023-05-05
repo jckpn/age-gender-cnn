@@ -4,6 +4,7 @@ from torchvision import transforms
 import numpy as np
 import cv2 as cv
 
+
 # BasicCNN - 1 conv layer, 1 linear layer
 class BasicCNN(nn.Module):
     def __init__(self, num_classes):
@@ -30,7 +31,7 @@ class BasicCNN(nn.Module):
         # For processing single images during inference
         single_in  = single_in.unsqueeze(0)
         pred = self.layers(single_in)
-        pred = torch.argmax(pred, dim=1)
+        pred = torch.argmax(pred, dim=1) if self.num_classes > 1 else pred
         return pred.item()
 
 # LeNet (LeNet-5) - 2 conv layers, 3 linear layers
@@ -66,7 +67,7 @@ class LeNet(nn.Module):
         # For processing single images during inference
         single_in  = single_in.unsqueeze(0)
         pred = self.layers(single_in)
-        pred = torch.argmax(pred, dim=1)
+        pred = torch.argmax(pred, dim=1) if self.num_classes > 1 else pred
         return pred.item()
     
 
@@ -90,7 +91,7 @@ class AlexNet(nn.Module):
         # For processing single images during inference
         single_in  = single_in.unsqueeze(0)
         pred = self.layers(single_in)
-        pred = torch.argmax(pred, dim=1)
+        pred = torch.argmax(pred, dim=1) if self.num_classes > 1 else pred
         return pred.item()
     
 
@@ -114,7 +115,7 @@ class VGG16(nn.Module):
         # For processing single images during inference
         single_in  = single_in.unsqueeze(0)
         pred = self.layers(single_in)
-        pred = torch.argmax(pred, dim=1)
+        pred = torch.argmax(pred, dim=1) if self.num_classes > 1 else pred
         return pred.item()
 
 

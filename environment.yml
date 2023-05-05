@@ -110,6 +110,7 @@ dependencies:
   - pip:
     - absl-py==1.4.0
     - addict==2.4.0
+    - attrs==23.1.0
     - basicsr==1.4.2
     - boto3==1.26.108
     - botocore==1.29.108
@@ -120,6 +121,7 @@ dependencies:
     - deeplake==3.2.21
     - dill==0.3.6
     - entrypoints==0.4
+    - exceptiongroup==1.1.1
     - facexlib==0.3.0
     - filelock==3.10.2
     - filterpy==1.4.5
@@ -130,6 +132,7 @@ dependencies:
     - google-auth-oauthlib==1.0.0
     - grpcio==1.53.0
     - humbug==0.3.1
+    - hypothesis==6.74.0
     - idna==3.4
     - imageio==2.27.0
     - jinja2==3.1.2
@@ -172,6 +175,7 @@ dependencies:
     - scikit-image==0.20.0
     - scikit-learn==1.2.2
     - scipy==1.10.1
+    - sortedcontainers==2.4.0
     - sympy==1.11.1
     - tb-nightly==2.13.0a20230414
     - tensorboard-data-server==0.7.0
@@ -185,4 +189,3 @@ dependencies:
     - urllib3==1.26.15
     - werkzeug==2.2.3
     - yapf==0.32.0
-prefix: C:\Users\jckpn\anaconda3\envs\fyp

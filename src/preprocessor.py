@@ -6,7 +6,8 @@ from PIL import Image
 
 
 # Init detector
-detector_model_path = os.path.dirname(__file__) + "/models/face_detection_yunet_2022mar.onnx"
+current_dir = os.path.dirname(__file__)
+detector_model_path = os.path.join(current_dir, "../models/face_detection_yunet_2022mar.onnx")
 detector = cv.FaceDetectorYN.create(
     model=detector_model_path,
     config="", # Custom config - leave blank
@@ -110,7 +111,7 @@ def process(crop='face', size=84):
 
 if __name__ == '__main__':
     # Test preprocessor
-    input_img = cv.imread('./example_images/festival.jpg')
+    input_img = cv.imread('../example_images/festival.jpg')
 
     face_images, face_coords = process(crop='mid')(input_img)
 
