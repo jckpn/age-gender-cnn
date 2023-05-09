@@ -30,11 +30,11 @@ conda env create -f environment.yml
 Alternatively, install the packages via pip:
 
 ```sh
-torch torchvisioncopencv-python ipykernel tqdm
+torch torchvision opencv-python ipykernel tqdm
 ```
+(more packages may be required, I didn't have time to test this)
 
-Next, download the OpenCV face detection model from [here](https://github.com/opencv/opencv_zoo/blob/master/models/face_detection_yunet/face_detection_yunet_2022mar.onnx?raw=true) and place it in the `age-gender-cnn` installation folder. This file cannot be included in this repo due to copyright.
-
+Next, download the OpenCV face detection model from [here](https://github.com/opencv/opencv_zoo/blob/master/models/face_detection_yunet/face_detection_yunet_2022mar.onnx?raw=true) and place it in the `models` folder. This file couldn't be included due to copyright.
 
 ## 💻 Use
 
