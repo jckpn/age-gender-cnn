@@ -21,28 +21,15 @@ git clone https://github.com/jckpn/age-gender-cnn.git
 cd age-gender-cnn
 ```
 
-Clone the conda environment and install relevant packages:
-
-```sh
-conda env create -f environment.yml
-```
-
-Alternatively, install the packages via pip:
+Install required packages with pip:
 
 ```sh
 torch torchvision opencv-python ipykernel tqdm
 ```
-(more packages may be required, I didn't have time to test this)
 
-Next, download the OpenCV face detection model from [here](https://github.com/opencv/opencv_zoo/blob/master/models/face_detection_yunet/face_detection_yunet_2022mar.onnx?raw=true) and place it in the `models` folder. This file couldn't be included due to copyright.
+Download these three models and place them in the `models` folder: [AlexNet-2_genderEq_83.pt](https://drive.google.com/file/d/1eeOHTckWW01P32mfIR-D0CsTnKNYwr2D/view?usp=share_link), [AlexNet-1_ageNoEq_7.pt](https://drive.google.com/file/d/1nTz7URYHH8fWc46L8GvXmi4yiJFgAry9/view?usp=share_link), [face_detection_yunet_2022mar.onnx](https://github.com/opencv/opencv_zoo/blob/master/models/face_detection_yunet/face_detection_yunet_2022mar.onnx?raw=true)
 
 ## 💻 Use
-
-Activate the conda environment you cloned earlier (if you used conda):
-
-```sh
-conda activate fyp
-```
 
 ### Run with image
 
