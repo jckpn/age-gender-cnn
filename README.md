@@ -11,7 +11,7 @@ For more details on the project's development, as well as an in-depth review of 
 
 ## ⚙️ Installation
 
-Running this program will require **Git**, **Anaconda** and **Python 3**.
+Running this program requires at minimum Git, Anaconda and Python 3.
 
 First, clone the repo in your desired installation folder:
 
