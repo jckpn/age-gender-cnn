@@ -24,7 +24,7 @@ cd age-gender-cnn
 Install required packages with pip:
 
 ```sh
-torch torchvision opencv-python ipykernel tqdm
+pip install torch torchvision opencv-python ipykernel tqdm
 ```
 
 Download these three models and place them in the `models` folder: [AlexNet-2_genderEq_83.pt](https://drive.google.com/file/d/1eeOHTckWW01P32mfIR-D0CsTnKNYwr2D/view?usp=share_link), [AlexNet-1_ageNoEq_7.pt](https://drive.google.com/file/d/1nTz7URYHH8fWc46L8GvXmi4yiJFgAry9/view?usp=share_link), [face_detection_yunet_2022mar.onnx](https://github.com/opencv/opencv_zoo/blob/master/models/face_detection_yunet/face_detection_yunet_2022mar.onnx?raw=true)
