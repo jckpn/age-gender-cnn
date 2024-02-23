@@ -9,8 +9,7 @@ For more details on the project's development, as well as an in-depth review of 
 *Children as young as three are intrinsically capable of recognising these traits by glancing at a person's face, yet encoding this ability into a mathematical model or computer program has remained a difficult challenge for many decades. However, recent advances in machine learning and the advent of convolutional neural networks have allowed researchers to replicate similar perceptive skills on computers to a remarkable degree.* (from abstract)
 
 ![image](https://github.com/jckpn/age-gender-cnn/assets/14837124/9e29b3d0-9f9a-4802-b416-d3990dbe48cd)
-
-![image](https://github.com/jckpn/age-gender-cnn/assets/14837124/8ccef08d-941e-4010-93f5-9177d7ff668a)
+[Source image: [Shutterstock ID 1284992623](https://www.shutterstock.com/image-photo/three-generation-hispanic-family-standing-park-1284992623)]
 
 
 ## ⚙️ Installation
