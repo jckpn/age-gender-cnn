@@ -10,7 +10,7 @@ For more details on the project's development, as well as an in-depth review of 
 
 ![image](https://github.com/jckpn/age-gender-cnn/assets/14837124/9e29b3d0-9f9a-4802-b416-d3990dbe48cd)
 
-[Source image: [Shutterstock ID 1284992623](https://www.shutterstock.com/image-photo/three-generation-hispanic-family-standing-park-1284992623)]
+*Source image: [Shutterstock ID 1284992623](https://www.shutterstock.com/image-photo/three-generation-hispanic-family-standing-park-1284992623)*
 
 
 ## ⚙️ Installation
